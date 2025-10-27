@@ -1,0 +1,2 @@
+(()=>{var e={288:e=>{"use strict";e.exports=require("electron")}},r={};const{contextBridge:t,ipcRenderer:o}=function t(o){var n=r[o];if(void 0!==n)return n.exports;var i=r[o]={exports:{}};return e[o](i,i.exports,t),i.exports}(288);t.exposeInMainWorld("electronAPI",{readMetadata:e=>o.invoke("read-metadata",e),exportTimeline:e=>o.invoke("export-timeline",e),onExportProgress:e=>o.on("export-progress",e),selectFile:()=>o.invoke("select-file"),selectSaveLocation:()=>o.invoke("select-save-location")})})();
+//# sourceMappingURL=preload.js.map

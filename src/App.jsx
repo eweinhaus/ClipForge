@@ -4,6 +4,7 @@ import { generateUuid } from './utils/uuid';
 import { ERROR_MESSAGES } from './utils/constants';
 import FileImporter from './components/FileImporter';
 import Timeline from './components/Timeline';
+import VideoPreview from './components/VideoPreview';
 import Notifications from './components/Notifications';
 import './styles/main.css';
 
@@ -13,6 +14,7 @@ import './styles/main.css';
 function AppContent() {
   const [clips, setClips] = useState([]);
   const [selectedClipId, setSelectedClipId] = useState(null);
+  const [currentPlaybackTime, setCurrentPlaybackTime] = useState(0);
   const [isImporting, setIsImporting] = useState(false);
   const { showToast } = useToast();
 
@@ -137,19 +139,10 @@ function AppContent() {
       </aside>
 
       <main className="preview-panel">
-        {selectedClipId ? (
-          <div className="preview-placeholder">
-            <h2>Video Preview</h2>
-            <p>Selected: {clips.find(c => c.id === selectedClipId)?.fileName}</p>
-            <p className="text-muted">Video preview will be implemented in PR-3</p>
-          </div>
-        ) : (
-          <div className="preview-placeholder">
-            <div className="empty-icon">🎬</div>
-            <h2>No clip selected</h2>
-            <p className="text-muted">Select a clip from the timeline to preview</p>
-          </div>
-        )}
+        <VideoPreview
+          clip={clips.find(c => c.id === selectedClipId) || null}
+          onPlaybackChange={setCurrentPlaybackTime}
+        />
       </main>
 
       <Notifications />

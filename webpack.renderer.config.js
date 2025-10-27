@@ -1,4 +1,5 @@
 const rules = require('./webpack.rules');
+const path = require('path');
 
 rules.push({
   test: /\.css$/,
@@ -12,5 +13,9 @@ module.exports = {
   },
   resolve: {
     extensions: ['.js', '.jsx', '.json'],
+  },
+  output: {
+    filename: '[name]/index.js',
+    path: path.resolve(__dirname, '.webpack/renderer'),
   },
 };

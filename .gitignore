@@ -60,3 +60,7 @@ jspm_packages/
 
 # Credentials
 .git-credentials
+
+
+#md files
+md_files/

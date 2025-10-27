@@ -6699,6 +6699,17 @@ module.exports = require("net");
 
 /***/ }),
 
+/***/ "node:fs":
+/*!**************************!*\
+  !*** external "node:fs" ***!
+  \**************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:fs");
+
+/***/ }),
+
 /***/ "node:path":
 /*!****************************!*\
   !*** external "node:path" ***!
@@ -6807,8 +6818,11 @@ const {
   app,
   BrowserWindow,
   ipcMain,
-  dialog
+  dialog,
+  session,
+  protocol
 } = __webpack_require__(/*! electron */ "electron");
+const fs = __webpack_require__(/*! node:fs */ "node:fs");
 const path = __webpack_require__(/*! node:path */ "node:path");
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -6816,6 +6830,18 @@ if (__webpack_require__(/*! electron-squirrel-startup */ "./node_modules/electro
   app.quit();
 }
 let mainWindow;
+
+// Register custom protocol before app is ready
+protocol.registerSchemesAsPrivileged([{
+  scheme: 'local-media',
+  privileges: {
+    standard: true,
+    secure: true,
+    stream: true,
+    supportFetchAPI: true,
+    corsEnabled: true
+  }
+}]);
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -6828,6 +6854,27 @@ const createWindow = () => {
       contextIsolation: true,
       nodeIntegration: false
     }
+  });
+
+  // Configure CSP to allow loading local media files
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    const headers = {
+      ...details.responseHeaders
+    };
+    // Remove any existing CSP header regardless of case to avoid duplicates
+    for (const key of Object.keys(headers)) {
+      if (key.toLowerCase() === 'content-security-policy') {
+        delete headers[key];
+      }
+    }
+    const csp = "default-src 'self' 'unsafe-inline' data:; " + "media-src 'self' local-media: file: data: blob:; " + "img-src 'self' local-media: file: data: blob:; " + "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " + "style-src 'self' 'unsafe-inline';";
+    headers['Content-Security-Policy'] = [csp];
+    if (details.resourceType === 'mainFrame') {
+      console.log('[CSP] Applied CSP to mainFrame:', csp);
+    }
+    callback({
+      responseHeaders: headers
+    });
   });
 
   // and load the index.html of the app.
@@ -6900,6 +6947,29 @@ ipcMain.handle('select-save-location', async () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  // Register handler for local-media:// protocol
+  try {
+    protocol.registerFileProtocol('local-media', (request, callback) => {
+      const url = request.url || '';
+      const filePath = decodeURIComponent(url.replace('local-media://', ''));
+      const exists = fs.existsSync(filePath);
+      console.log('[Protocol][local-media] Request', {
+        url,
+        filePath,
+        exists
+      });
+      if (!exists) {
+        console.error('[Protocol][local-media] File does not exist', filePath);
+      }
+      callback({
+        path: filePath
+      });
+    });
+    console.log('[Protocol][local-media] Protocol registered');
+  } catch (e) {
+    console.error('[Protocol][local-media] Registration failed', e);
+  }
+
   // Test FFmpeg availability
   try {
     const ffmpeg = __webpack_require__(/*! fluent-ffmpeg */ "./node_modules/fluent-ffmpeg/index.js");

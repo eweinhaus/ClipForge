@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, session, protocol } = require('electron');
+const fs = require('node:fs');
 const path = require('node:path');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -7,6 +8,20 @@ if (require('electron-squirrel-startup')) {
 }
 
 let mainWindow;
+
+// Register custom protocol before app is ready
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'local-media',
+    privileges: {
+      standard: true,
+      secure: true,
+      stream: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+    },
+  },
+]);
 
 const createWindow = () => {
   // Create the browser window.
@@ -18,8 +33,29 @@ const createWindow = () => {
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
     },
+  });
+
+  // Configure CSP to allow loading local media files
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    const headers = { ...details.responseHeaders };
+    // Remove any existing CSP header regardless of case to avoid duplicates
+    for (const key of Object.keys(headers)) {
+      if (key.toLowerCase() === 'content-security-policy') {
+        delete headers[key];
+      }
+    }
+    const csp = "default-src 'self' 'unsafe-inline' data:; " +
+      "media-src 'self' local-media: file: data: blob:; " +
+      "img-src 'self' local-media: file: data: blob:; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+      "style-src 'self' 'unsafe-inline';";
+    headers['Content-Security-Policy'] = [csp];
+    if (details.resourceType === 'mainFrame') {
+      console.log('[CSP] Applied CSP to mainFrame:', csp);
+    }
+    callback({ responseHeaders: headers });
   });
 
   // and load the index.html of the app.
@@ -91,6 +127,23 @@ ipcMain.handle('select-save-location', async () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  // Register handler for local-media:// protocol
+  try {
+    protocol.registerFileProtocol('local-media', (request, callback) => {
+      const url = request.url || '';
+      const filePath = decodeURIComponent(url.replace('local-media://', ''));
+      const exists = fs.existsSync(filePath);
+      console.log('[Protocol][local-media] Request', { url, filePath, exists });
+      if (!exists) {
+        console.error('[Protocol][local-media] File does not exist', filePath);
+      }
+      callback({ path: filePath });
+    });
+    console.log('[Protocol][local-media] Protocol registered');
+  } catch (e) {
+    console.error('[Protocol][local-media] Registration failed', e);
+  }
+
   // Test FFmpeg availability
   try {
     const ffmpeg = require('fluent-ffmpeg');

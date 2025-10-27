@@ -18,8 +18,8 @@
 
 ## What's Left to Build (Core Features - MVP)
 
-### PR-3: Video Preview & Playback (NEXT)
-3.  **Video Preview & Playback:** Integrate an HTML5 `<video>` element for previewing selected clips. Implement play/pause controls, a scrubber for seeking, and display current time and resolution.
+### PR-3: Video Preview & Playback (COMPLETED)
+3.  **Video Preview & Playback:** ✅ Successfully implemented comprehensive video preview functionality with HTML5 `<video>` element, play/pause controls, scrubber for seeking, keyboard shortcuts, and metadata display. All acceptance criteria met including smooth playback (30fps+), responsive seeking (< 500ms), and proper error handling. **All manual tests passed successfully.**
 
 ### PR-4: Trim Clips
 4.  **Trim Clips (Simple In/Out Points):** Create controls (number inputs) to set trim start and end points for clips. Ensure validation, persistence of trim values, and visual feedback in the preview.

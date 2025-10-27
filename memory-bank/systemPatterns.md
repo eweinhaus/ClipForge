@@ -22,12 +22,12 @@ electron/
   captureService.js   🔄 Stub (Future)
 
 src/
-  App.jsx             ✅ Root component with FileImporter, Timeline, Notifications
+  App.jsx             ✅ Root component with FileImporter, Timeline, VideoPreview, Notifications
   components/
     FileImporter.jsx  ✅ Implemented (PR-2)
     Timeline.jsx      ✅ Implemented (PR-2)
+    VideoPreview.jsx  ✅ Implemented (PR-3)
     ClipEditor.jsx    🔄 Stub (PR-4)
-    VideoPreview.jsx  🔄 Stub (PR-3)
     ExportDialog.jsx  🔄 Stub (PR-5)
     Notifications.jsx ✅ Implemented (PR-2)
   utils/              ✅ Implemented (uuid, formatters, constants, toastContext)

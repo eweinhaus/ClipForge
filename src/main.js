@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('node:path');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -33,13 +33,50 @@ const createWindow = () => {
   });
 };
 
+// Import fileManager
+const fileManager = require('../electron/fileManager');
+
 // Register IPC handlers
 ipcMain.handle('read-metadata', async (event, filePath) => {
-  throw new Error('Not implemented - will be added in PR-2');
+  try {
+    console.log('[IPC] read-metadata request received for:', filePath);
+    const metadata = await fileManager.getMetadata(filePath);
+    console.log('[IPC] Metadata extracted successfully, returning to renderer');
+    return { success: true, data: metadata };
+  } catch (err) {
+    console.error('[IPC] Error reading metadata:', {
+      errorType: err.message,
+      userMessage: err.userMessage,
+      filePath
+    });
+    
+    // Return error info to renderer instead of throwing
+    // This gives the UI more control over error handling
+    return {
+      success: false,
+      error: {
+        type: err.message || 'UNKNOWN_ERROR',
+        message: err.userMessage || 'Failed to read video file',
+        details: err.details || err.message
+      }
+    };
+  }
 });
 
-ipcMain.handle('select-file', async () => {
-  throw new Error('Not implemented - will be added in PR-2');
+ipcMain.handle('select-file', async (event) => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile', 'multiSelections'],
+    filters: [
+      { name: 'Videos', extensions: ['mp4', 'mov', 'webm'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  });
+
+  if (result.canceled) {
+    return [];
+  } else {
+    return result.filePaths;
+  }
 });
 
 ipcMain.handle('export-timeline', async (event, data) => {
@@ -59,22 +96,42 @@ app.whenReady().then(() => {
     const ffmpeg = require('fluent-ffmpeg');
     const { getFFmpegPath, getFFprobePath } = require('../electron/utils/ffmpegPath');
     
-    ffmpeg.setFfmpegPath(getFFmpegPath());
-    ffmpeg.setFfprobePath(getFFprobePath());
+    const ffmpegPath = getFFmpegPath();
+    const ffprobePath = getFFprobePath();
+
+    console.log('[FFmpeg] Resolved binary paths', { ffmpegPath, ffprobePath });
+
+    ffmpeg.setFfmpegPath(ffmpegPath);
+    ffmpeg.setFfprobePath(ffprobePath);
     
-    console.log('FFmpeg path:', getFFmpegPath());
-    console.log('FFprobe path:', getFFprobePath());
+    console.log('[FFmpeg] Paths configured successfully');
     
     // Quick test
     ffmpeg.getAvailableFormats((err, formats) => {
       if (err) {
-        console.error('FFmpeg not available:', err);
-      } else {
-        console.log('FFmpeg is working! Formats available:', Object.keys(formats).length);
+        console.error('[FFmpeg] Availability check failed', {
+          message: err.message,
+          code: err.code,
+          errno: err.errno,
+          path: err.path,
+          spawnargs: err.spawnargs
+        });
+
+        return;
       }
+
+      const totalFormats = Object.keys(formats).length;
+      const sample = Object.keys(formats).slice(0, 5);
+
+      console.log('[FFmpeg] Formats available', totalFormats);
+      console.debug('[FFmpeg] Sample formats', sample);
     });
   } catch (err) {
-    console.error('FFmpeg setup failed:', err);
+    console.error('[FFmpeg] Setup failed', {
+      message: err.message,
+      stack: err.stack,
+      code: err.code
+    });
   }
 
   createWindow();

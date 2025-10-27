@@ -17,22 +17,22 @@ electron/
       darwin-x64/
         ffmpeg        ✅ Executable binary
         ffprobe       ✅ Executable binary
-  fileManager.js      🔄 Stub (PR-2)
+  fileManager.js      ✅ Implemented (PR-2)
   mediaProcessor.js   🔄 Stub (PR-5)
   captureService.js   🔄 Stub (Future)
 
 src/
-  App.jsx             ✅ Root component with IPC testing
+  App.jsx             ✅ Root component with FileImporter, Timeline, Notifications
   components/
-    FileImporter.jsx  🔄 Stub (PR-2)
-    Timeline.jsx      🔄 Stub (PR-2)
+    FileImporter.jsx  ✅ Implemented (PR-2)
+    Timeline.jsx      ✅ Implemented (PR-2)
     ClipEditor.jsx    🔄 Stub (PR-4)
     VideoPreview.jsx  🔄 Stub (PR-3)
     ExportDialog.jsx  🔄 Stub (PR-5)
-    Notifications.jsx 🔄 Stub (PR-5)
-  utils/              🔄 Empty (Future utilities)
+    Notifications.jsx ✅ Implemented (PR-2)
+  utils/              ✅ Implemented (uuid, formatters, constants, toastContext)
   styles/
-    main.css          🔄 Empty (Future styling)
+    main.css          ✅ Implemented (PR-2)
 ```
 
 ## Key Technical Decisions ✅ IMPLEMENTED
@@ -48,7 +48,7 @@ src/
 
 ## Component Relationships and Data Model
 
-### Clip Object (To be implemented in PR-2)
+### Clip Object ✅ IMPLEMENTED (PR-2)
 
 ```javascript
 {
@@ -67,7 +67,7 @@ src/
 }
 ```
 
-### App State (To be implemented in PR-2)
+### App State ✅ IMPLEMENTED (PR-2)
 
 ```javascript
 {

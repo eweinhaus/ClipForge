@@ -1,41 +1,71 @@
 const path = require('path');
 const { app } = require('electron');
 const os = require('os');
+const fs = require('fs');
+
+function ensureExecutable(binaryPath, label) {
+  try {
+    fs.accessSync(binaryPath, fs.constants.X_OK);
+  } catch (err) {
+    if (err.code === 'EACCES') {
+      try {
+        fs.chmodSync(binaryPath, 0o755);
+        fs.accessSync(binaryPath, fs.constants.X_OK);
+        console.info(`[FFmpeg] Added execute permission to ${label} at ${binaryPath}`);
+      } catch (chmodErr) {
+        console.warn(`[FFmpeg] Failed to set execute permission for ${label} at ${binaryPath}`, chmodErr);
+      }
+    } else if (err.code === 'ENOENT') {
+      console.warn(`[FFmpeg] ${label} binary not found at ${binaryPath}`);
+    } else {
+      console.warn(`[FFmpeg] Unable to access ${label} at ${binaryPath}`, err);
+    }
+  }
+
+  return binaryPath;
+}
 
 function getFFmpegPath() {
-  if (process.env.NODE_ENV === 'development') {
-    // Use system FFmpeg in dev (assumes brew install ffmpeg)
-    return 'ffmpeg';
+  const arch = os.arch();
+  const platform = os.platform();
+  
+  let resourcesPath;
+  if (app.isPackaged) {
+    resourcesPath = process.resourcesPath;
+  } else {
+    // In development, resources are copied to .webpack/main/resources
+    resourcesPath = path.join(__dirname, '..', '..', '.webpack', 'main', 'resources');
   }
   
-  // Production: use bundled FFmpeg
-  const arch = os.arch(); // 'arm64' or 'x64'
-  const platform = os.platform(); // 'darwin'
-  const resourcesPath = process.resourcesPath;
-  
-  return path.join(
+  const binaryPath = path.join(
     resourcesPath,
     'ffmpeg',
     `${platform}-${arch}`,
     'ffmpeg'
   );
+
+  return ensureExecutable(binaryPath, 'ffmpeg');
 }
 
 function getFFprobePath() {
-  if (process.env.NODE_ENV === 'development') {
-    return 'ffprobe';
-  }
-  
   const arch = os.arch();
   const platform = os.platform();
-  const resourcesPath = process.resourcesPath;
   
-  return path.join(
+  let resourcesPath;
+  if (app.isPackaged) {
+    resourcesPath = process.resourcesPath;
+  } else {
+    resourcesPath = path.join(__dirname, '..', '..', '.webpack', 'main', 'resources');
+  }
+  
+  const binaryPath = path.join(
     resourcesPath,
     'ffmpeg',
     `${platform}-${arch}`,
     'ffprobe'
   );
+
+  return ensureExecutable(binaryPath, 'ffprobe');
 }
 
 module.exports = { getFFmpegPath, getFFprobePath };

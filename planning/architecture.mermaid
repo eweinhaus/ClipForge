@@ -1,0 +1,93 @@
+graph TB
+    subgraph Renderer["Renderer Process - React UI"]
+        App["App.jsx<br/>State: clips, selectedClipId<br/>playbackTime, exportProgress"]
+        
+        subgraph Components["Components"]
+            FI["FileImporter<br/>drag and drop"]
+            TL["Timeline<br/>clip list, reorder"]
+            CE["ClipEditor<br/>trim, filters"]
+            VP["VideoPreview<br/>HTML5 player"]
+            ED["ExportDialog<br/>options, progress"]
+            REC["RecordingPanel<br/>screen, webcam"]
+        end
+        
+        App -->|props| FI
+        App -->|props| TL
+        App -->|props| CE
+        App -->|props| VP
+        App -->|props| ED
+        App -->|props| REC
+        
+        FI -->|onImportFiles| App
+        TL -->|onReorder, onDelete| App
+        CE -->|onTrimChange| App
+        VP -->|onPlaybackChange| App
+        ED -->|onExport| App
+        REC -->|onRecordStop| App
+    end
+    
+    subgraph IPCBridge["IPC Bridge - Async Messages"]
+        IPCInvoke["invoke: Renderer to Main"]
+        IPCSend["send: Main to Renderer"]
+    end
+    
+    subgraph Main["Main Process - Node.js"]
+        FileMan["fileManager.js<br/>Read metadata<br/>Manage temp files<br/>Validate paths"]
+        
+        MediaProc["mediaProcessor.js<br/>FFmpeg wrapper<br/>Stitch clips<br/>Apply trims<br/>Export to MP4"]
+        
+        CaptureSvc["captureService.js<br/>Desktop capture API<br/>Screen recording<br/>Webcam recording<br/>Audio capture"]
+        
+        ChildProcs["Child Processes<br/>FFmpeg instances"]
+    end
+    
+    subgraph System["System Resources"]
+        FFmpeg["FFmpeg<br/>installed or bundled"]
+        FileSystem["File System<br/>read and write videos"]
+        Camera["Camera and Mic<br/>getUserMedia"]
+        Screen["Screen<br/>desktopCapturer"]
+    end
+    
+    Renderer -->|invoke readMetadata| IPCBridge
+    IPCBridge -->|readMetadata| FileMan
+    FileMan -->|spawn ffprobe| ChildProcs
+    ChildProcs -->|exec| FFmpeg
+    
+    Renderer -->|invoke exportTimeline| IPCBridge
+    IPCBridge -->|exportTimeline| MediaProc
+    MediaProc -->|spawn ffmpeg| ChildProcs
+    ChildProcs -->|exec| FFmpeg
+    
+    Renderer -->|invoke startScreenRecord| IPCBridge
+    IPCBridge -->|startScreenRecord| CaptureSvc
+    CaptureSvc -->|desktopCapturer| Screen
+    
+    Renderer -->|invoke startWebcamRecord| IPCBridge
+    IPCBridge -->|startWebcamRecord| CaptureSvc
+    CaptureSvc -->|getUserMedia| Camera
+    
+    FileMan -->|read and write| FileSystem
+    MediaProc -->|read and write| FileSystem
+    
+    Main -->|send exportProgress| IPCBridge
+    IPCBridge -->|update state| Renderer
+    
+    Main -->|send error| IPCBridge
+    IPCBridge -->|show notification| Renderer
+    
+    FFmpeg -.->|reads clips| FileSystem
+    ChildProcs -.->|writes temp files| FileSystem
+    
+    style App fill:#4A90E2,stroke:#2E5C8A,color:#fff,font-weight:bold
+    style Renderer fill:#E8F4F8,stroke:#4A90E2,stroke-width:2px
+    style FileMan fill:#F8E8E8,stroke:#E85D5D
+    style MediaProc fill:#F8E8E8,stroke:#E85D5D
+    style CaptureSvc fill:#F8E8E8,stroke:#E85D5D
+    style Main fill:#F0F0F0,stroke:#666,stroke-width:2px
+    style IPCBridge fill:#FFE8B6,stroke:#F0A000,stroke-width:2px,font-weight:bold
+    style System fill:#E8E8E8,stroke:#666,stroke-width:2px
+    style FFmpeg fill:#D4A574,stroke:#8B6914,color:#fff
+    style FileSystem fill:#D4A574,stroke:#8B6914,color:#fff
+    style Camera fill:#D4A574,stroke:#8B6914,color:#fff
+    style Screen fill:#D4A574,stroke:#8B6914,color:#fff
+    style ChildProcs fill:#E8E8E8,stroke:#999

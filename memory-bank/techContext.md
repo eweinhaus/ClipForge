@@ -11,10 +11,8 @@
 
 ## Technologies To Be Added (Future PRs)
 
-*   **Drag & Drop Library:** `react-beautiful-dnd` (PR-2)
+*   **Drag & Drop Library:** `react-beautiful-dnd` (PR-6)
 *   **Video Player:** Standard HTML5 `<video>` element (PR-3)
-*   **State Management:** React `useState`/`useReducer` (PR-2)
-*   **UI/Styling:** Clean, minimal UI with `main.css` (PR-2+)
 *   **Toast Notifications:** `react-hot-toast` or similar (PR-5)
 
 ## Development Setup ✅ WORKING
@@ -46,7 +44,7 @@
 ## Technical Constraints and Dependencies ✅ IMPLEMENTED
 
 *   **FFmpeg Bundling:** ✅ Successfully bundled within the packaged app using `extraResource` in forge.config.js
-*   **IPC for Native Operations:** ✅ Secure contextBridge implementation with stub handlers
+*   **IPC for Native Operations:** ✅ Secure contextBridge implementation with all handlers for PR-2
 *   **macOS as Target Platform:** ✅ Tested and working on macOS (darwin-x64)
 *   **Electron Forge:** ✅ Used for project scaffolding, development, and packaging
 *   **Security:** ✅ contextIsolation: true, nodeIntegration: false
@@ -75,14 +73,14 @@
 - `fluent-ffmpeg` - FFmpeg wrapper
 - `@babel/preset-react` - JSX compilation
 - `babel-loader` - Webpack loader
+- `copy-webpack-plugin` - For copying FFmpeg binaries in dev (PR-2)
 
 ### To Be Added (Future PRs)
-- `react-beautiful-dnd` - Drag and drop (PR-2)
+- `react-beautiful-dnd` - Drag and drop (PR-6)
 - `react-hot-toast` - Notifications (PR-5)
-- `uuid` - Unique IDs for clips (PR-2)
+- `uuid` - Unique IDs for clips (PR-2) - **NOTE: This was implemented as a utility, not a separate package**
 
 ## Known Technical Issues
 
-*   **Dev Mode FFmpeg:** Requires `brew install ffmpeg` for development (not needed for packaged app)
 *   **EGL Errors:** Normal macOS warnings in console, don't affect functionality
 *   **Autofill Errors:** DevTools warnings, don't affect functionality

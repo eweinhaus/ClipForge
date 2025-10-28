@@ -9,4 +9,40 @@
   background: #f8f9fa;
   border: 1px solid #e9ecef;
   margin: 8px 0;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+/* Alternating row colors */
+.track:nth-child(even) {
+  background: #ffffff;
+}
+
+.track:nth-child(odd) {
+  background: #f8f9fa;
+}
+
+/* Hover state for tracks */
+.track:hover {
+  background: #e9ecef;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .track {
+    background: #2d3748;
+    border-color: #4a5568;
+  }
+  
+  .track:nth-child(even) {
+    background: #1a202c;
+  }
+  
+  .track:nth-child(odd) {
+    background: #2d3748;
+  }
+  
+  .track:hover {
+    background: #4a5568;
+  }
 }

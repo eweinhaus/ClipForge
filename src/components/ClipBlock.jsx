@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
-import { formatDuration } from '../utils/formatters';
+import { formatDuration, ellipsize, formatTrimmedDuration } from '../utils/formatters';
 import { timeToPx, pxToTime, snap, validateTrimRange } from '../utils/timelineUtils';
+import { useThumbnailPreload } from '../hooks/useThumbnailPreload';
 import Tooltip from './Tooltip';
 import './ClipBlock.css';
 
@@ -26,11 +27,15 @@ export default function ClipBlock({
   const [draftTrimEnd, setDraftTrimEnd] = useState(clip.trimEnd);
   const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, timeSeconds: 0, message: '' });
   const [isHovered, setIsHovered] = useState(false);
+  const [hoverCard, setHoverCard] = useState({ visible: false, x: 0, y: 0 });
   
   const blockRef = useRef(null);
   const startXRef = useRef(0);
   const originalTrimStartRef = useRef(0);
   const originalTrimEndRef = useRef(0);
+  
+  // Use thumbnail preloading hook
+  const { elementRef, isLoaded, hasError, cachedSrc } = useThumbnailPreload(clip.id, clip.thumbnail);
   // Update draft values when clip changes
   useEffect(() => {
     setDraftTrimStart(clip.trimStart);
@@ -139,12 +144,23 @@ export default function ClipBlock({
     onDelete();
   };
 
-  const handleMouseEnter = () => {
+  const handleMouseEnter = (e) => {
     setIsHovered(true);
+    
+    // Show hover card with full filename and original duration
+    if (!isDraggingEdge) {
+      const rect = blockRef.current.getBoundingClientRect();
+      setHoverCard({
+        visible: true,
+        x: rect.left + rect.width / 2,
+        y: rect.top - 10
+      });
+    }
   };
 
   const handleMouseLeave = () => {
     setIsHovered(false);
+    setHoverCard({ visible: false, x: 0, y: 0 });
     if (!isDraggingEdge) {
       setTooltip({ visible: false, x: 0, y: 0, timeSeconds: 0, message: '' });
     }
@@ -167,7 +183,7 @@ export default function ClipBlock({
         onClick={handleClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        role="button"
+        role="listitem"
         tabIndex={0}
         onKeyPress={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -191,21 +207,35 @@ export default function ClipBlock({
           title="Drag to trim end"
         />
 
-        <div className="clip-thumbnail">
-          <img
-            src={clip.thumbnail}
-            alt={clip.fileName}
-            loading="lazy"
-          />
+        {/* Enhanced thumbnail with lazy loading */}
+        <div className="clip-thumbnail" ref={elementRef}>
+          {isLoaded && cachedSrc ? (
+            <img
+              src={cachedSrc}
+              alt={clip.fileName}
+              className="thumbnail-image"
+            />
+          ) : hasError ? (
+            <div className="thumbnail-placeholder error">
+              <span>📹</span>
+            </div>
+          ) : (
+            <div className="thumbnail-placeholder loading">
+              <span>⏳</span>
+            </div>
+          )}
         </div>
-        <div className="clip-info">
-          <div className="clip-name" title={clip.fileName}>
-            {clip.fileName.length > 20 ? `${clip.fileName.substring(0, 20)}...` : clip.fileName}
-          </div>
-          <div className="clip-duration">
-            {formatDuration(draftTrimEnd - draftTrimStart)}
-          </div>
+
+        {/* Filename overlay */}
+        <div className="clip-filename-overlay">
+          {ellipsize(clip.fileName, 15)}
         </div>
+
+        {/* Trimmed duration overlay */}
+        <div className="clip-duration-overlay">
+          {formatTrimmedDuration(draftTrimStart, draftTrimEnd)}
+        </div>
+
         <button
           className="clip-delete"
           onClick={handleDelete}
@@ -216,8 +246,31 @@ export default function ClipBlock({
         </button>
       </div>
       
-      {/* Tooltip */}
+      {/* Tooltip for drag operations */}
       <Tooltip {...tooltip} />
+      
+      {/* Hover card for clip information */}
+      {hoverCard.visible && !isDraggingEdge && (
+        <div 
+          className="clip-hover-card"
+          style={{
+            left: `${hoverCard.x}px`,
+            top: `${hoverCard.y}px`,
+            transform: 'translateX(-50%)'
+          }}
+        >
+          <div className="hover-card-content">
+            <div className="hover-card-filename">{clip.fileName}</div>
+            <div className="hover-card-duration">
+              Original: {formatDuration(clip.duration)}
+            </div>
+            <div className="hover-card-trimmed">
+              Trimmed: {formatTrimmedDuration(draftTrimStart, draftTrimEnd)}
+            </div>
+          </div>
+          <div className="hover-card-arrow"></div>
+        </div>
+      )}
     </>
   );
 }

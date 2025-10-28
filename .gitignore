@@ -64,3 +64,8 @@ jspm_packages/
 
 #md files
 md_files/
+
+# Webpack build artifacts and hot-update files
+.webpack/
+*.hot-update.js
+*.hot-update.json

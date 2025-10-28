@@ -5,6 +5,7 @@
   width: 2px;
   cursor: pointer;
   z-index: 10;
+  user-select: none;
 }
 
 .playhead.dragging {
@@ -20,16 +21,17 @@
 
 .playhead-handle {
   position: absolute;
-  top: -6px;
-  left: -5px;
-  width: 12px;
-  height: 12px;
+  top: -7px;
+  left: -6px;
+  width: 14px;
+  height: 14px;
   background: #dc3545;
   border-radius: 50%;
   border: 2px solid #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   cursor: grab;
   transition: transform 0.1s ease;
+  user-select: none;
 }
 
 .playhead-handle:hover {

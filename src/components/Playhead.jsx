@@ -7,8 +7,56 @@ import './Playhead.css';
  */
 export default function Playhead({ position, pxPerSecond, onSeekToTime }) {
   const [isDragging, setIsDragging] = useState(false);
+  const [dragPosition, setDragPosition] = useState(0);
   const playheadRef = useRef(null);
-  const playheadPosition = position * pxPerSecond;
+  const isDraggingRef = useRef(false);
+  const playheadPosition = isDragging ? dragPosition : position * pxPerSecond;
+
+  // Mouse move handler - uses ref to avoid stale closure issues
+  const handleMouseMove = (e) => {
+    if (!isDraggingRef.current || !playheadRef.current) {
+      return;
+    }
+    
+    console.log('Playhead: Mouse move - dragging', { 
+      clientX: e.clientX, 
+      clientY: e.clientY,
+      isDragging: isDraggingRef.current 
+    });
+    
+    const timelineContainer = playheadRef.current.closest('.timeline-track-container');
+    if (!timelineContainer) return;
+    
+    const rect = timelineContainer.getBoundingClientRect();
+    const currentMouseX = e.clientX - rect.left;
+    const clampedX = Math.max(0, Math.min(currentMouseX, rect.width));
+    const timeAtClick = clampedX / pxPerSecond;
+    
+    console.log('Playhead: Position update', { 
+      currentMouseX, 
+      clampedX, 
+      timeAtClick,
+      timelineWidth: rect.width 
+    });
+    
+    // Update visual position immediately
+    setDragPosition(clampedX);
+    
+    // Also update the actual timeline position
+    onSeekToTime(timeAtClick);
+  };
+
+  // Mouse up handler
+  const handleMouseUp = () => {
+    console.log('Playhead: Mouse up - ending drag');
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    setDragPosition(0);
+    
+    // Remove global mouse event listeners
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+  };
 
   // Cleanup event listeners on unmount
   useEffect(() => {
@@ -21,31 +69,23 @@ export default function Playhead({ position, pxPerSecond, onSeekToTime }) {
   const handleMouseDown = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log('Playhead: Mouse down - starting drag');
+    
+    // Initialize drag position
+    const timelineContainer = playheadRef.current?.closest('.timeline-track-container');
+    if (timelineContainer) {
+      const rect = timelineContainer.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      setDragPosition(clickX);
+    }
+    
+    // Set dragging state
+    isDraggingRef.current = true;
     setIsDragging(true);
     
     // Add global mouse event listeners
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isDragging || !playheadRef.current) return;
-    
-    const timelineContainer = playheadRef.current.closest('.timeline-track-container');
-    if (!timelineContainer) return;
-    
-    const rect = timelineContainer.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const timeAtClick = Math.max(0, clickX / pxPerSecond);
-    onSeekToTime(timeAtClick);
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    
-    // Remove global mouse event listeners
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
   };
 
   const handleClick = (e) => {

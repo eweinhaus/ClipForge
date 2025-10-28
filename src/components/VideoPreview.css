@@ -234,9 +234,17 @@
 }
 
 .video-preview .preview-placeholder .empty-icon {
-  font-size: 80px;
   margin-bottom: 20px;
   opacity: 0.3;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-preview .preview-placeholder .empty-icon.error {
+  color: var(--error);
+  opacity: 0.6;
 }
 
 .video-preview .preview-placeholder h2 {

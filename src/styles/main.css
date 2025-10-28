@@ -59,6 +59,38 @@ body {
   height: 100vh;
   overflow: hidden;
   background: var(--bg-light);
+  position: relative;
+}
+
+/* Help Button */
+.help-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 100;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: var(--bg-white);
+  color: var(--primary);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+}
+
+.help-button:hover {
+  background: var(--primary);
+  color: white;
+  transform: scale(1.1);
+  box-shadow: var(--shadow-lg);
+}
+
+.help-button:active {
+  transform: scale(0.95);
 }
 
 /* Timeline panel (left side) */
@@ -197,9 +229,29 @@ input[type="number"]:focus {
   }
 }
 
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
     opacity: 0;
   }
   to {
@@ -212,8 +264,27 @@ input[type="number"]:focus {
   animation: fadeIn 0.3s ease-in;
 }
 
+.fade-out {
+  animation: fadeOut 0.3s ease-out;
+}
+
 .slide-up {
   animation: slideUp 0.3s ease-out;
+}
+
+.slide-down {
+  animation: slideDown 0.3s ease-out;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Preview placeholder */

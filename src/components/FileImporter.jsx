@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Upload, Film } from 'lucide-react';
 import { useToast } from '../utils/toastContext';
 import { SUPPORTED_MIME_TYPES, ERROR_MESSAGES } from '../utils/constants';
 import './FileImporter.css';
@@ -28,14 +29,8 @@ export default function FileImporter({ onImportFiles, isLoading }) {
     e.stopPropagation();
     setIsDragging(false);
 
-    console.log('[FileImporter] Drop event triggered.', { dataTransferFiles: e.dataTransfer.files });
-
     const files = Array.from(e.dataTransfer.files);
-    console.log('[FileImporter] Files array from dataTransfer:', files);
-
     const filePaths = await window.electronAPI.handleDroppedFiles(files);
-
-    console.log('[FileImporter] Extracted file paths:', filePaths);
 
     if (filePaths.length > 0) {
       onImportFiles(filePaths);
@@ -66,7 +61,9 @@ export default function FileImporter({ onImportFiles, isLoading }) {
           </div>
         ) : (
           <div className="drop-zone-content">
-            <div className="drop-zone-icon">📹</div>
+            <div className="drop-zone-icon">
+              <Film size={48} strokeWidth={1.5} />
+            </div>
             <p className="drop-zone-title">Drag & drop video files here</p>
             <p className="drop-zone-formats">Supports: MP4, MOV, WebM</p>
           </div>
@@ -92,7 +89,8 @@ export default function FileImporter({ onImportFiles, isLoading }) {
           }
         }}
       >
-        {isLoading ? 'Importing...' : 'Or choose files'}
+        <Upload size={16} />
+        <span>{isLoading ? 'Importing...' : 'Or choose files'}</span>
       </label>
     </div>
   );

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Trash2, Film } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -46,7 +47,9 @@ export default function Timeline({ clips, selectedClipId, onSelectClip, onDelete
   if (clips.length === 0) {
     return (
       <div className="timeline-empty">
-        <div className="empty-icon">🎬</div>
+        <div className="empty-icon">
+          <Film size={64} strokeWidth={1.5} />
+        </div>
         <p>No clips yet</p>
         <p className="empty-hint">Import videos to get started!</p>
       </div>
@@ -147,7 +150,7 @@ const SortableClipItem = React.memo(({ clip, isSelected, onSelect, onDelete }) =
         title="Delete clip"
         aria-label={`Delete ${clip.fileName}`}
       >
-        ×
+        <Trash2 size={16} />
       </button>
     </div>
   );

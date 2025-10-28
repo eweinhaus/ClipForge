@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { Play, Pause, Video, AlertTriangle } from 'lucide-react';
 import { formatDuration, formatResolution } from '../utils/formatters';
 import './VideoPreview.css';
 
@@ -42,17 +43,7 @@ export default function VideoPreview({ clip, onPlaybackChange }) {
       video.src = videoSrc;
       video.load();
 
-      // Enhanced logging
       video.onloadedmetadata = () => {
-        console.log('[Video] loadedmetadata', {
-          src: videoSrc,
-          duration: video.duration,
-          videoWidth: video.videoWidth,
-          videoHeight: video.videoHeight,
-          readyState: video.readyState,
-          trimStart: clip.trimStart,
-          trimEnd: clip.trimEnd,
-        });
         handleLoadedMetadata();
       };
 
@@ -194,9 +185,7 @@ export default function VideoPreview({ clip, onPlaybackChange }) {
       <div className="video-preview">
         <div className="preview-placeholder">
           <div className="empty-icon">
-            <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
-            </svg>
+            <Video size={80} strokeWidth={1.5} />
           </div>
           <h2>No clip selected</h2>
           <p className="text-muted">Select a clip from the timeline to preview</p>
@@ -210,10 +199,8 @@ export default function VideoPreview({ clip, onPlaybackChange }) {
     return (
       <div className="video-preview">
         <div className="preview-placeholder">
-          <div className="empty-icon">
-            <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
-            </svg>
+          <div className="empty-icon error">
+            <AlertTriangle size={80} strokeWidth={1.5} />
           </div>
           <h2>Video Error</h2>
           <p className="text-muted">Unable to load video file</p>
@@ -257,16 +244,7 @@ export default function VideoPreview({ clip, onPlaybackChange }) {
           disabled={isLoading}
           title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
         >
-          {isPlaying ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="4" width="4" height="16" rx="1"/>
-              <rect x="14" y="4" width="4" height="16" rx="1"/>
-            </svg>
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8 5v14l11-7z"/>
-            </svg>
-          )}
+          {isPlaying ? <Pause size={18} /> : <Play size={18} />}
         </button>
 
         {/* Time Display */}

@@ -39,8 +39,11 @@
 }
 
 .drop-zone-icon {
-  font-size: 48px;
   margin-bottom: 8px;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .drop-zone-title {
@@ -84,7 +87,10 @@
 }
 
 .file-picker-btn {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   margin: 12px auto 0;
   padding: 10px 24px;
   background: #4A90E2;

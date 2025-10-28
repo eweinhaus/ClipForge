@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Download, HelpCircle } from 'lucide-react';
 import { ToastProvider, useToast } from './utils/toastContext';
 import { generateUuid } from './utils/uuid';
 import { ERROR_MESSAGES } from './utils/constants';
@@ -7,6 +8,7 @@ import Timeline from './components/Timeline';
 import VideoPreview from './components/VideoPreview';
 import ClipEditor from './components/ClipEditor';
 import ExportDialog from './components/ExportDialog';
+import HelpDialog from './components/HelpDialog';
 import Notifications from './components/Notifications';
 import './styles/main.css';
 
@@ -24,6 +26,9 @@ function AppContent() {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [exportError, setExportError] = useState(null);
+  
+  // Help dialog state
+  const [showHelpDialog, setShowHelpDialog] = useState(false);
   
   const { showToast } = useToast();
 
@@ -69,8 +74,6 @@ function AppContent() {
 
     for (const filePath of filePaths) {
       try {
-        console.log('[App] Importing file:', filePath);
-        
         // Call IPC to extract metadata
         const result = await window.electronAPI.readMetadata(filePath);
         
@@ -106,8 +109,6 @@ function AppContent() {
         // Add to clips state
         setClips(prev => [...prev, newClip]);
         successCount++;
-        
-        console.log('[App] Successfully imported:', newClip.fileName);
       } catch (err) {
         console.error('[App] Unexpected import error:', err);
         errorCount++;
@@ -214,8 +215,6 @@ function AppContent() {
     setExportError(null);
 
     try {
-      console.log('[App] Starting export to:', outputPath);
-      
       const result = await window.electronAPI.exportTimeline({
         clips,
         outputPath
@@ -253,6 +252,16 @@ function AppContent() {
 
   return (
     <div className="app-container">
+      {/* Help Button (Top Right) */}
+      <button 
+        className="help-button"
+        onClick={() => setShowHelpDialog(true)}
+        title="Help & Shortcuts"
+        aria-label="Open help dialog"
+      >
+        <HelpCircle size={20} />
+      </button>
+
       <aside className="timeline-panel">
         <FileImporter 
           onImportFiles={handleImportFiles} 
@@ -284,7 +293,8 @@ function AppContent() {
             onClick={() => setShowExportDialog(true)}
             disabled={clips.length === 0 || isExporting}
           >
-            Export Timeline ({clips.length} clip{clips.length !== 1 ? 's' : ''})
+            <Download size={20} />
+            <span>Export Timeline ({clips.length} clip{clips.length !== 1 ? 's' : ''})</span>
           </button>
         </div>
       </main>
@@ -298,6 +308,12 @@ function AppContent() {
         isExporting={isExporting}
         exportProgress={exportProgress}
         exportError={exportError}
+      />
+
+      {/* Help Dialog */}
+      <HelpDialog
+        isOpen={showHelpDialog}
+        onClose={() => setShowHelpDialog(false)}
       />
 
       <Notifications />

@@ -1,7 +1,8 @@
 const path = require('path');
-const { app } = require('electron');
-const os = require('os');
-const fs = require('fs');
+const isDev = process.env.NODE_ENV === 'development';
+const isMac = process.platform === 'darwin';
+const arch = process.arch;
+const fs = require('fs'); // Add this import
 
 function ensureExecutable(binaryPath, label) {
   try {
@@ -25,47 +26,20 @@ function ensureExecutable(binaryPath, label) {
   return binaryPath;
 }
 
-function getFFmpegPath() {
-  const arch = os.arch();
-  const platform = os.platform();
-  
-  let resourcesPath;
-  if (app.isPackaged) {
-    resourcesPath = process.resourcesPath;
-  } else {
-    // In development, resources are copied to .webpack/main/resources
-    resourcesPath = path.join(__dirname, '..', '..', '.webpack', 'main', 'resources');
-  }
-  
-  const binaryPath = path.join(
-    resourcesPath,
-    'ffmpeg',
-    `${platform}-${arch}`,
-    'ffmpeg'
-  );
-
+function getFfmpegBinaryPath() {
+  const binaryPath = isDev
+    ? path.join(__dirname, '..', '..', '.webpack', 'main', 'resources', 'ffmpeg', `darwin-${arch}`, 'ffmpeg')
+    : path.join(process.resourcesPath, 'ffmpeg', `darwin-${arch}`, 'ffmpeg');
+  console.log(`[FFmpegPath] FFmpeg binary path: ${binaryPath} (isDev: ${isDev})`);
   return ensureExecutable(binaryPath, 'ffmpeg');
 }
 
-function getFFprobePath() {
-  const arch = os.arch();
-  const platform = os.platform();
-  
-  let resourcesPath;
-  if (app.isPackaged) {
-    resourcesPath = process.resourcesPath;
-  } else {
-    resourcesPath = path.join(__dirname, '..', '..', '.webpack', 'main', 'resources');
-  }
-  
-  const binaryPath = path.join(
-    resourcesPath,
-    'ffmpeg',
-    `${platform}-${arch}`,
-    'ffprobe'
-  );
-
+function getFfprobeBinaryPath() {
+  const binaryPath = isDev
+    ? path.join(__dirname, '..', '..', '.webpack', 'main', 'resources', 'ffmpeg', `darwin-${arch}`, 'ffprobe')
+    : path.join(process.resourcesPath, 'ffmpeg', `darwin-${arch}`, 'ffprobe');
+  console.log(`[FFmpegPath] FFprobe binary path: ${binaryPath} (isDev: ${isDev})`);
   return ensureExecutable(binaryPath, 'ffprobe');
 }
 
-module.exports = { getFFmpegPath, getFFprobePath };
+module.exports = { getFfmpegBinaryPath, getFfprobeBinaryPath };

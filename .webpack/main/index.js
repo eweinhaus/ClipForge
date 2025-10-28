@@ -7,18 +7,29 @@
   \*********************************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
+const path = __webpack_require__(/*! path */ "path");
 const ffmpeg = __webpack_require__(/*! fluent-ffmpeg */ "./node_modules/fluent-ffmpeg/index.js");
 const {
-  getFFmpegPath,
-  getFFprobePath
+  getFfmpegBinaryPath,
+  getFfprobeBinaryPath
 } = __webpack_require__(/*! ./utils/ffmpegPath */ "./electron/utils/ffmpegPath.js");
 const fs = __webpack_require__(/*! fs */ "fs");
-const path = __webpack_require__(/*! path */ "path");
 const os = __webpack_require__(/*! os */ "os");
 
 // Configure FFmpeg paths
-ffmpeg.setFfmpegPath(getFFmpegPath());
-ffmpeg.setFfprobePath(getFFprobePath());
+ffmpeg.setFfmpegPath(getFfmpegBinaryPath());
+ffmpeg.setFfprobePath(getFfprobeBinaryPath());
+
+/**
+ * Error types for consistent error handling
+ */
+const ERROR_TYPES = {
+  FFMPEG_ERROR: 'FFMPEG_ERROR',
+  CORRUPT_VIDEO: 'CORRUPT_VIDEO',
+  FILE_NOT_FOUND: 'FILE_NOT_FOUND',
+  PERMISSION_DENIED: 'PERMISSION_DENIED',
+  INVALID_FORMAT: 'INVALID_FORMAT'
+};
 
 /**
  * Create a timeout promise
@@ -42,19 +53,19 @@ async function extractMetadata(filePath) {
         const errorMsg = err.message || '';
 
         // Classify the error type based on ffprobe output
-        let errorType = 'FFMPEG_ERROR';
+        let errorType = ERROR_TYPES.FFMPEG_ERROR;
         let userMessage = 'Failed to read video file';
         if (errorMsg.includes('moov atom not found') || errorMsg.includes('Invalid data found')) {
-          errorType = 'CORRUPT_VIDEO';
+          errorType = ERROR_TYPES.CORRUPT_VIDEO;
           userMessage = 'Video file is corrupted or incomplete. The file may not have finished uploading/downloading.';
         } else if (errorMsg.includes('No such file') || errorMsg.includes('does not exist')) {
-          errorType = 'FILE_NOT_FOUND';
+          errorType = ERROR_TYPES.FILE_NOT_FOUND;
           userMessage = 'Video file not found';
         } else if (errorMsg.includes('Permission denied')) {
-          errorType = 'PERMISSION_DENIED';
+          errorType = ERROR_TYPES.PERMISSION_DENIED;
           userMessage = 'Permission denied when accessing video file';
         } else if (errorMsg.includes('not a valid')) {
-          errorType = 'INVALID_FORMAT';
+          errorType = ERROR_TYPES.INVALID_FORMAT;
           userMessage = 'Video format not supported';
         }
         console.error('[Metadata] ffprobe error', {
@@ -78,7 +89,7 @@ async function extractMetadata(filePath) {
       const videoStream = data.streams.find(s => s.codec_type === 'video');
       if (!videoStream) {
         console.warn('[Metadata] No video stream detected in ffprobe response');
-        const error = new Error('CORRUPT_VIDEO');
+        const error = new Error(ERROR_TYPES.CORRUPT_VIDEO);
         error.userMessage = 'No video stream found in file';
         reject(error);
         return;
@@ -151,7 +162,7 @@ async function generateThumbnailAtTime(filePath, timestamp) {
           errno: err.errno,
           path: err.path
         });
-        reject(new Error('FFMPEG_ERROR'));
+        reject(new Error(ERROR_TYPES.FFMPEG_ERROR));
       }
     }).on('error', err => {
       console.error('[Thumbnail] Generation error', {
@@ -165,7 +176,7 @@ async function generateThumbnailAtTime(filePath, timestamp) {
       if (fs.existsSync(tempPath)) {
         fs.unlinkSync(tempPath);
       }
-      reject(new Error('FFMPEG_ERROR'));
+      reject(new Error(ERROR_TYPES.FFMPEG_ERROR));
     });
   });
 }
@@ -190,7 +201,7 @@ async function generateThumbnail(filePath) {
   }
 
   // If all timestamps fail, return placeholder
-  throw new Error('FFMPEG_ERROR');
+  throw new Error(ERROR_TYPES.FFMPEG_ERROR);
 }
 
 /**
@@ -206,7 +217,7 @@ async function getMetadata(filePath) {
     // Validate file exists
     if (!fs.existsSync(filePath)) {
       console.warn('[Metadata] File not found at path', filePath);
-      throw new Error('FILE_NOT_FOUND');
+      throw new Error(ERROR_TYPES.FILE_NOT_FOUND);
     }
 
     // Get file stats for logging
@@ -233,7 +244,7 @@ async function getMetadata(filePath) {
         filePath,
         err
       });
-      throw new Error('PERMISSION_DENIED');
+      throw new Error(ERROR_TYPES.PERMISSION_DENIED);
     }
 
     // Extract metadata with timeout
@@ -287,14 +298,16 @@ module.exports = {
 
 const ffmpeg = __webpack_require__(/*! fluent-ffmpeg */ "./node_modules/fluent-ffmpeg/index.js");
 const {
-  getFFmpegPath
+  getFfmpegBinaryPath,
+  getFfprobeBinaryPath
 } = __webpack_require__(/*! ./utils/ffmpegPath */ "./electron/utils/ffmpegPath.js");
 const fs = __webpack_require__(/*! fs */ "fs");
 const path = __webpack_require__(/*! path */ "path");
 const os = __webpack_require__(/*! os */ "os");
 
 // Configure FFmpeg path
-ffmpeg.setFfmpegPath(getFFmpegPath());
+ffmpeg.setFfmpegPath(getFfmpegBinaryPath());
+ffmpeg.setFfprobePath(getFfprobeBinaryPath());
 
 /**
  * Error mapping for user-friendly messages
@@ -561,11 +574,11 @@ module.exports = {
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 const path = __webpack_require__(/*! path */ "path");
-const {
-  app
-} = __webpack_require__(/*! electron */ "electron");
-const os = __webpack_require__(/*! os */ "os");
-const fs = __webpack_require__(/*! fs */ "fs");
+const isDev = "development" === 'development';
+const isMac = process.platform === 'darwin';
+const arch = process.arch;
+const fs = __webpack_require__(/*! fs */ "fs"); // Add this import
+
 function ensureExecutable(binaryPath, label) {
   try {
     fs.accessSync(binaryPath, fs.constants.X_OK);
@@ -586,34 +599,19 @@ function ensureExecutable(binaryPath, label) {
   }
   return binaryPath;
 }
-function getFFmpegPath() {
-  const arch = os.arch();
-  const platform = os.platform();
-  let resourcesPath;
-  if (app.isPackaged) {
-    resourcesPath = process.resourcesPath;
-  } else {
-    // In development, resources are copied to .webpack/main/resources
-    resourcesPath = path.join(__dirname, '..', '..', '.webpack', 'main', 'resources');
-  }
-  const binaryPath = path.join(resourcesPath, 'ffmpeg', `${platform}-${arch}`, 'ffmpeg');
+function getFfmpegBinaryPath() {
+  const binaryPath = isDev ? path.join(__dirname, '..', '..', '.webpack', 'main', 'resources', 'ffmpeg', `darwin-${arch}`, 'ffmpeg') : path.join(process.resourcesPath, 'ffmpeg', `darwin-${arch}`, 'ffmpeg');
+  console.log(`[FFmpegPath] FFmpeg binary path: ${binaryPath} (isDev: ${isDev})`);
   return ensureExecutable(binaryPath, 'ffmpeg');
 }
-function getFFprobePath() {
-  const arch = os.arch();
-  const platform = os.platform();
-  let resourcesPath;
-  if (app.isPackaged) {
-    resourcesPath = process.resourcesPath;
-  } else {
-    resourcesPath = path.join(__dirname, '..', '..', '.webpack', 'main', 'resources');
-  }
-  const binaryPath = path.join(resourcesPath, 'ffmpeg', `${platform}-${arch}`, 'ffprobe');
+function getFfprobeBinaryPath() {
+  const binaryPath = isDev ? path.join(__dirname, '..', '..', '.webpack', 'main', 'resources', 'ffmpeg', `darwin-${arch}`, 'ffprobe') : path.join(process.resourcesPath, 'ffmpeg', `darwin-${arch}`, 'ffprobe');
+  console.log(`[FFmpegPath] FFprobe binary path: ${binaryPath} (isDev: ${isDev})`);
   return ensureExecutable(binaryPath, 'ffprobe');
 }
 module.exports = {
-  getFFmpegPath,
-  getFFprobePath
+  getFfmpegBinaryPath,
+  getFfprobeBinaryPath
 };
 
 /***/ }),
@@ -7076,6 +7074,11 @@ module.exports = require("util");
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/compat */
+/******/ 	
+/******/ 	if (typeof __webpack_require__ !== 'undefined') __webpack_require__.ab = __dirname + "/native_modules/";
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};

@@ -24,12 +24,11 @@
 ### PR-4: Trim Clips (COMPLETED)
 4.  **Trim Clips (Simple In/Out Points):** ✅ Successfully implemented comprehensive trim functionality with ClipEditor component featuring number inputs for trim start/end points, validation logic with error handling, Apply/Reset buttons, and integration with VideoPreview to respect trim points during playback. All acceptance criteria met including trim validation, persistence, visual feedback, proper clamping behavior, and compact UI design. **All manual tests passed successfully including edge cases, multiple clips, and error recovery.**
 
-### PR-5: Export & Polish
-5.  **Export to MP4 (Core Loop Completion):** Implement an export function that stitches all trimmed and ordered clips into a single MP4 file. This includes user selection of output location, a progress bar during export, and robust error handling for issues like disk space or permissions.
-6.  **Error Handling & User Feedback:** Establish a comprehensive error handling system using toast notifications for user-friendly messages across all potential failure points (invalid files, FFmpeg issues, export failures).
+### PR-5: Export Timeline to MP4 (COMPLETED)
+5.  **Export to MP4 (Core Loop Completion):** ✅ Successfully implemented comprehensive export functionality with mediaProcessor.js handling FFmpeg operations, segment extraction with normalization, filter_complex concatenation, progress reporting via IPC, ExportDialog component with file picker and progress bar, Cmd+E keyboard shortcut, and robust error handling. All acceptance criteria met including proper clip ordering, trim application, audio/video sync, and user-friendly error messages. **All manual tests passed successfully including multi-clip exports, progress reporting, and error cases.**
 
-### PR-6: Reorder Clips (Drag & Drop)
-7.  **Drag-and-drop Reordering:** Implement drag-and-drop reordering for clips in the timeline, updating the state and ensuring export respects the new order.
+### PR-6: Reorder Clips (Drag & Drop) (COMPLETED)
+6.  **Drag-and-drop Reordering:** ✅ Successfully implemented drag-and-drop reordering using @dnd-kit packages (modern React 19 compatible alternative to react-beautiful-dnd). Timeline component updated with DndContext and SortableContext, SortableClipItem component created with full drag support, handleReorderClips function implemented in App.jsx with proper order property updates, visual feedback added (opacity, box-shadow, cursor changes), and mediaProcessor verified to sort clips by order before export. **All implementation tasks completed successfully with no console errors or linting issues.**
 
 ## Current Status
 
@@ -37,10 +36,13 @@
 *   **PR-2 Complete:** Core import and timeline display implemented
 *   **PR-3 Complete:** Video preview and playback functionality implemented
 *   **PR-4 Complete:** Trim clips functionality implemented with comprehensive testing
+*   **PR-5 Complete:** Export timeline to MP4 with progress reporting and error handling
+*   **PR-6 Complete:** Drag-and-drop reordering with visual feedback and keyboard support
 *   **App Functional:** Launches successfully in both dev and production modes
 *   **FFmpeg Working:** Successfully bundled and functional
-*   **Architecture Ready:** All core components and IPC handlers for PR-1 through PR-4 in place
+*   **Architecture Ready:** All core components and IPC handlers for PR-1 through PR-6 in place
 *   **UI Polish:** Compact, responsive design with proper error handling
+*   **Next Up:** PR-7 (Responsive UI & Polish) and PR-8 (Testing, Packaging & Final Polish)
 
 ## Known Issues
 

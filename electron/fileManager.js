@@ -1,12 +1,23 @@
-const ffmpeg = require('fluent-ffmpeg');
-const { getFFmpegPath, getFFprobePath } = require('./utils/ffmpegPath');
-const fs = require('fs');
 const path = require('path');
+const ffmpeg = require('fluent-ffmpeg');
+const { getFfmpegBinaryPath, getFfprobeBinaryPath } = require('./utils/ffmpegPath');
+const fs = require('fs');
 const os = require('os');
 
 // Configure FFmpeg paths
-ffmpeg.setFfmpegPath(getFFmpegPath());
-ffmpeg.setFfprobePath(getFFprobePath());
+ffmpeg.setFfmpegPath(getFfmpegBinaryPath());
+ffmpeg.setFfprobePath(getFfprobeBinaryPath());
+
+/**
+ * Error types for consistent error handling
+ */
+const ERROR_TYPES = {
+  FFMPEG_ERROR: 'FFMPEG_ERROR',
+  CORRUPT_VIDEO: 'CORRUPT_VIDEO',
+  FILE_NOT_FOUND: 'FILE_NOT_FOUND',
+  PERMISSION_DENIED: 'PERMISSION_DENIED',
+  INVALID_FORMAT: 'INVALID_FORMAT'
+};
 
 /**
  * Create a timeout promise
@@ -32,20 +43,20 @@ async function extractMetadata(filePath) {
         const errorMsg = err.message || '';
         
         // Classify the error type based on ffprobe output
-        let errorType = 'FFMPEG_ERROR';
+        let errorType = ERROR_TYPES.FFMPEG_ERROR;
         let userMessage = 'Failed to read video file';
         
         if (errorMsg.includes('moov atom not found') || errorMsg.includes('Invalid data found')) {
-          errorType = 'CORRUPT_VIDEO';
+          errorType = ERROR_TYPES.CORRUPT_VIDEO;
           userMessage = 'Video file is corrupted or incomplete. The file may not have finished uploading/downloading.';
         } else if (errorMsg.includes('No such file') || errorMsg.includes('does not exist')) {
-          errorType = 'FILE_NOT_FOUND';
+          errorType = ERROR_TYPES.FILE_NOT_FOUND;
           userMessage = 'Video file not found';
         } else if (errorMsg.includes('Permission denied')) {
-          errorType = 'PERMISSION_DENIED';
+          errorType = ERROR_TYPES.PERMISSION_DENIED;
           userMessage = 'Permission denied when accessing video file';
         } else if (errorMsg.includes('not a valid')) {
-          errorType = 'INVALID_FORMAT';
+          errorType = ERROR_TYPES.INVALID_FORMAT;
           userMessage = 'Video format not supported';
         }
         
@@ -71,7 +82,7 @@ async function extractMetadata(filePath) {
       const videoStream = data.streams.find(s => s.codec_type === 'video');
       if (!videoStream) {
         console.warn('[Metadata] No video stream detected in ffprobe response');
-        const error = new Error('CORRUPT_VIDEO');
+        const error = new Error(ERROR_TYPES.CORRUPT_VIDEO);
         error.userMessage = 'No video stream found in file';
         reject(error);
         return;
@@ -145,7 +156,7 @@ async function generateThumbnailAtTime(filePath, timestamp) {
             errno: err.errno,
             path: err.path
           });
-          reject(new Error('FFMPEG_ERROR'));
+          reject(new Error(ERROR_TYPES.FFMPEG_ERROR));
         }
       })
       .on('error', (err) => {
@@ -160,7 +171,7 @@ async function generateThumbnailAtTime(filePath, timestamp) {
         if (fs.existsSync(tempPath)) {
           fs.unlinkSync(tempPath);
         }
-        reject(new Error('FFMPEG_ERROR'));
+        reject(new Error(ERROR_TYPES.FFMPEG_ERROR));
       });
   });
 }
@@ -183,7 +194,7 @@ async function generateThumbnail(filePath) {
   }
   
   // If all timestamps fail, return placeholder
-  throw new Error('FFMPEG_ERROR');
+  throw new Error(ERROR_TYPES.FFMPEG_ERROR);
 }
 
 /**
@@ -199,7 +210,7 @@ async function getMetadata(filePath) {
     // Validate file exists
     if (!fs.existsSync(filePath)) {
       console.warn('[Metadata] File not found at path', filePath);
-      throw new Error('FILE_NOT_FOUND');
+      throw new Error(ERROR_TYPES.FILE_NOT_FOUND);
     }
 
     // Get file stats for logging
@@ -223,7 +234,7 @@ async function getMetadata(filePath) {
       console.log('[Metadata] File is readable ✓');
     } catch (err) {
       console.warn('[Metadata] Permission denied when accessing file', { filePath, err });
-      throw new Error('PERMISSION_DENIED');
+      throw new Error(ERROR_TYPES.PERMISSION_DENIED);
     }
 
     // Extract metadata with timeout

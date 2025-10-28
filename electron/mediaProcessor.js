@@ -1,11 +1,12 @@
 const ffmpeg = require('fluent-ffmpeg');
-const { getFFmpegPath } = require('./utils/ffmpegPath');
+const { getFfmpegBinaryPath, getFfprobeBinaryPath } = require('./utils/ffmpegPath');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
 // Configure FFmpeg path
-ffmpeg.setFfmpegPath(getFFmpegPath());
+ffmpeg.setFfmpegPath(getFfmpegBinaryPath());
+ffmpeg.setFfprobePath(getFfprobeBinaryPath());
 
 /**
  * Error mapping for user-friendly messages

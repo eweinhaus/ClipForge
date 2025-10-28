@@ -1005,18 +1005,18 @@ Scenario: Export timeline with multiple clips
 **Objective:** Users can drag clips in timeline to reorder them. Export respects new order.
 
 ### Acceptance Criteria
-- [ ] Clips draggable in Timeline
-- [ ] Visual feedback during drag (ghost effect, drop zone highlight)
-- [ ] Drop repositions clip
-- [ ] Order property updated in state
-- [ ] Export respects new order
-- [ ] Smooth animations (no jank)
-- [ ] Works with 10+ clips
+- [x] Clips draggable in Timeline
+- [x] Visual feedback during drag (ghost effect, drop zone highlight)
+- [x] Drop repositions clip
+- [x] Order property updated in state
+- [x] Export respects new order
+- [x] Smooth animations (no jank)
+- [ ] Works with 10+ clips (pending manual test)
 
 ### Tasks
 
-#### Task 6.1: Integrate react-beautiful-dnd
-- [ ] Install: `npm install react-beautiful-dnd`
+#### Task 6.1: Integrate @dnd-kit (modern alternative to react-beautiful-dnd)
+- [x] Install: `npm install @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities`
 - [ ] Wrap Timeline with DragDropContext:
   ```javascript
   import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
@@ -1047,13 +1047,13 @@ Scenario: Export timeline with multiple clips
   ```
 
 **Acceptance:**
-- Clips can be dragged
-- Visual feedback during drag
+- [x] Clips can be dragged
+- [x] Visual feedback during drag
 
 ---
 
 #### Task 6.2: Implement Reorder Logic
-- [ ] Add handler to App.jsx:
+- [x] Add handler to App.jsx:
   ```javascript
   const handleDragEnd = (result) => {
     const { source, destination, draggableId } = result;
@@ -1074,23 +1074,23 @@ Scenario: Export timeline with multiple clips
     showToast('Clip reordered', 'success');
   };
   ```
-- [ ] Pass handler to Timeline
+- [x] Pass handler to Timeline
 
 **Acceptance:**
-- Clips reorder correctly
-- Order property updates
-- Success toast shown
+- [x] Clips reorder correctly
+- [x] Order property updates
+- [x] Success toast shown
 
 ---
 
 #### Task 6.3: Update Export to Use Order
-- [ ] Modify mediaProcessor to sort by order before export:
+- [x] Verify mediaProcessor already sorts by order before export (line 200):
   ```javascript
   const sortedClips = clips.sort((a, b) => a.order - b.order);
   ```
 
 **Acceptance:**
-- Export respects new clip order
+- [x] Export respects new clip order (already implemented)
 
 ---
 

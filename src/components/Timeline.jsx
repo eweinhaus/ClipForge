@@ -1,12 +1,48 @@
 import React from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { formatDuration, formatResolution } from '../utils/formatters';
 import './Timeline.css';
 
 /**
  * Timeline Component
- * Displays list of imported clips with thumbnails
+ * Displays list of imported clips with thumbnails and drag-and-drop reordering
  */
-export default function Timeline({ clips, selectedClipId, onSelectClip, onDeleteClip }) {
+export default function Timeline({ clips, selectedClipId, onSelectClip, onDeleteClip, onReorderClips }) {
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = clips.findIndex(clip => clip.id === active.id);
+      const newIndex = clips.findIndex(clip => clip.id === over.id);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        onReorderClips(oldIndex, newIndex);
+      }
+    }
+  };
+
   if (clips.length === 0) {
     return (
       <div className="timeline-empty">
@@ -23,29 +59,59 @@ export default function Timeline({ clips, selectedClipId, onSelectClip, onDelete
         <h3>Timeline</h3>
         <span className="clip-count">{clips.length} clip{clips.length !== 1 ? 's' : ''}</span>
       </div>
-      <div className="clip-list">
-        {clips.map(clip => (
-          <ClipItem
-            key={clip.id}
-            clip={clip}
-            isSelected={clip.id === selectedClipId}
-            onSelect={() => onSelectClip(clip.id)}
-            onDelete={() => onDeleteClip(clip.id)}
-          />
-        ))}
-      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={clips.map(clip => clip.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="clip-list">
+            {clips.map(clip => (
+              <SortableClipItem
+                key={clip.id}
+                clip={clip}
+                isSelected={clip.id === selectedClipId}
+                onSelect={() => onSelectClip(clip.id)}
+                onDelete={() => onDeleteClip(clip.id)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 }
 
 /**
- * ClipItem Component
- * Individual clip in the timeline
+ * SortableClipItem Component
+ * Individual clip in the timeline with drag-and-drop support
  */
-const ClipItem = React.memo(({ clip, isSelected, onSelect, onDelete }) => {
+const SortableClipItem = React.memo(({ clip, isSelected, onSelect, onDelete }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: clip.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
   return (
     <div
-      className={`clip-item ${isSelected ? 'selected' : ''}`}
+      ref={setNodeRef}
+      style={style}
+      className={`clip-item ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+      {...attributes}
+      {...listeners}
       onClick={onSelect}
       role="button"
       tabIndex={0}
@@ -87,4 +153,4 @@ const ClipItem = React.memo(({ clip, isSelected, onSelect, onDelete }) => {
   );
 });
 
-ClipItem.displayName = 'ClipItem';
+SortableClipItem.displayName = 'SortableClipItem';

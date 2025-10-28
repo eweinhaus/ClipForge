@@ -179,6 +179,32 @@ function AppContent() {
   };
 
   /**
+   * Handle clip reordering via drag and drop
+   * @param {number} oldIndex - Original index of the clip
+   * @param {number} newIndex - New index for the clip
+   */
+  const handleReorderClips = (oldIndex, newIndex) => {
+    if (oldIndex === newIndex) return;
+
+    // Create a copy of the clips array
+    const newClips = Array.from(clips);
+    
+    // Remove the clip from old position
+    const [movedClip] = newClips.splice(oldIndex, 1);
+    
+    // Insert at new position
+    newClips.splice(newIndex, 0, movedClip);
+    
+    // Update order property for all clips
+    newClips.forEach((clip, index) => {
+      clip.order = index;
+    });
+    
+    setClips(newClips);
+    showToast('Clip reordered', 'success');
+  };
+
+  /**
    * Handle export request
    * @param {string} outputPath - Path where to save the exported video
    */
@@ -237,6 +263,7 @@ function AppContent() {
           selectedClipId={selectedClipId}
           onSelectClip={handleSelectClip}
           onDeleteClip={handleDeleteClip}
+          onReorderClips={handleReorderClips}
         />
       </aside>
 

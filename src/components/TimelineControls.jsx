@@ -1,5 +1,6 @@
-import React from 'react';
-import { ZoomIn, ZoomOut, RotateCcw, Grid3X3 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ZoomIn, ZoomOut, RotateCcw, Download } from 'lucide-react';
+import { debounce } from '../utils/timelineUtils';
 import './TimelineControls.css';
 
 /**
@@ -11,11 +12,17 @@ export default function TimelineControls({
   onZoomChange, 
   scrollPosition, 
   onScrollChange,
-  snapToGrid,
-  onSnapToGridChange
+  clips,
+  timelineWidth,
+  onExport,
+  isExporting
 }) {
   const zoomLevels = [0.25, 0.5, 1, 2, 4];
   const currentZoomIndex = zoomLevels.indexOf(zoomLevel);
+  const sliderRef = useRef(null);
+
+  // Debounced zoom change handler
+  const debouncedZoomChange = debounce(onZoomChange, 300);
 
   const handleZoomIn = () => {
     if (currentZoomIndex < zoomLevels.length - 1) {
@@ -33,6 +40,12 @@ export default function TimelineControls({
     onZoomChange(1);
   };
 
+  const handleZoomSliderChange = (e) => {
+    const sliderValue = parseFloat(e.target.value);
+    debouncedZoomChange(sliderValue);
+  };
+
+
   return (
     <div className="timeline-controls">
       <div className="timeline-controls-left">
@@ -46,7 +59,24 @@ export default function TimelineControls({
           >
             <ZoomOut size={16} />
           </button>
-          <span className="zoom-level">{zoomLevel}x</span>
+          
+          {/* Zoom Slider */}
+          <div className="zoom-slider-container">
+            <input
+              ref={sliderRef}
+              type="range"
+              min="0.25"
+              max="4"
+              step="0.25"
+              value={zoomLevel}
+              onChange={handleZoomSliderChange}
+              className="zoom-slider"
+              title={`Zoom: ${zoomLevel}x`}
+              aria-label="Zoom Level"
+            />
+            <span className="zoom-level">{zoomLevel}x</span>
+          </div>
+          
           <button
             className="zoom-btn"
             onClick={handleZoomIn}
@@ -65,17 +95,18 @@ export default function TimelineControls({
             <RotateCcw size={16} />
           </button>
         </div>
-        
-        <div className="snap-controls">
-          <button
-            className={`snap-btn ${snapToGrid ? 'active' : ''}`}
-            onClick={() => onSnapToGridChange(!snapToGrid)}
-            title={snapToGrid ? "Disable Snap to Grid" : "Enable Snap to Grid"}
-            aria-label={snapToGrid ? "Disable Snap to Grid" : "Enable Snap to Grid"}
-          >
-            <Grid3X3 size={16} />
-          </button>
-        </div>
+      </div>
+      
+      <div className="timeline-controls-right">
+        <button
+          className="export-btn"
+          onClick={onExport}
+          disabled={clips.length === 0 || isExporting}
+          title="Export Timeline"
+        >
+          <Download size={16} />
+          <span>Export</span>
+        </button>
       </div>
     </div>
   );

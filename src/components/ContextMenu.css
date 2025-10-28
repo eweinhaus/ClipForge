@@ -1,0 +1,62 @@
+.context-menu {
+  background: white;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px 0;
+  min-width: 160px;
+  font-size: 14px;
+  user-select: none;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.context-menu-item:hover {
+  background-color: #f8f9fa;
+}
+
+.context-menu-item.danger {
+  color: #dc3545;
+}
+
+.context-menu-item.danger:hover {
+  background-color: #f8d7da;
+}
+
+.context-menu-divider {
+  height: 1px;
+  background-color: #e1e5e9;
+  margin: 4px 0;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .context-menu {
+    background: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+  }
+
+  .context-menu-item:hover {
+    background-color: #4a5568;
+  }
+
+  .context-menu-item.danger {
+    color: #fc8181;
+  }
+
+  .context-menu-item.danger:hover {
+    background-color: #742a2a;
+  }
+
+  .context-menu-divider {
+    background-color: #4a5568;
+  }
+}

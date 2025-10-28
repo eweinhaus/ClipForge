@@ -7174,7 +7174,8 @@ const createWindow = () => {
         delete headers[key];
       }
     }
-    const csp = "default-src 'self' 'unsafe-inline' data:; " + "media-src 'self' local-media: file: data: blob:; " + "img-src 'self' local-media: file: data: blob:; " + "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " + "style-src 'self' 'unsafe-inline';";
+    const isDev = !app.isPackaged;
+    const csp = isDev ? "default-src 'self' data: blob:; " + "media-src 'self' local-media: file: data: blob:; " + "img-src 'self' local-media: file: data: blob:; " + "script-src 'self' 'unsafe-eval'; " + "style-src 'self' 'unsafe-inline'; " + "connect-src 'self' ws: wss: http://0.0.0.0:3000 http://localhost:3000;" : "default-src 'self' data:; " + "media-src 'self' local-media: file: data: blob:; " + "img-src 'self' local-media: file: data: blob:; " + "script-src 'self'; " + "style-src 'self' 'unsafe-inline'; " + "connect-src 'self';";
     headers['Content-Security-Policy'] = [csp];
     if (details.resourceType === 'mainFrame') {
       console.log('[CSP] Applied CSP to mainFrame:', csp);

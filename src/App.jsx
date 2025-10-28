@@ -5,6 +5,7 @@ import { generateUuid } from './utils/uuid';
 import { ERROR_MESSAGES } from './utils/constants';
 import FileImporter from './components/FileImporter';
 import TimelineContainer from './components/TimelineContainer';
+import TimelineErrorBoundary from './components/TimelineErrorBoundary';
 import VideoPreview from './components/VideoPreview';
 import ClipEditor from './components/ClipEditor';
 import ExportDialog from './components/ExportDialog';
@@ -197,6 +198,44 @@ function AppContent() {
     }
 
     showToast('Clip deleted', 'success');
+  };
+
+  /**
+   * Handle clip duplication
+   * @param {string} clipId - ID of clip to duplicate
+   */
+  const handleDuplicateClip = (clipId) => {
+    const clip = clips.find(c => c.id === clipId);
+    if (!clip) return;
+
+    // Create a duplicate clip with new ID and order
+    const duplicatedClip = {
+      ...clip,
+      id: generateUuid(),
+      order: clips.length,
+      fileName: `${clip.fileName} (Copy)`
+    };
+
+    // Add to clips state
+    setClips(prev => [...prev, duplicatedClip]);
+    showToast('Clip duplicated', 'success');
+  };
+
+  /**
+   * Handle resetting clip trim points
+   * @param {string} clipId - ID of clip to reset trim
+   */
+  const handleResetTrim = (clipId) => {
+    const clip = clips.find(c => c.id === clipId);
+    if (!clip) return;
+
+    // Reset trim points to full duration
+    setClips(prev => prev.map(c => 
+      c.id === clipId 
+        ? { ...c, trimStart: 0, trimEnd: c.duration }
+        : c
+    ));
+    showToast('Trim reset', 'success');
   };
 
   /**
@@ -404,31 +443,25 @@ function AppContent() {
             clip={clips.find(c => c.id === selectedClipId) || null}
             onTrimChange={handleTrimChange}
           />
-          
-          {/* Export Button */}
-          <div className="export-section">
-            <button
-              className="export-button"
-              onClick={() => setShowExportDialog(true)}
-              disabled={clips.length === 0 || isExporting}
-            >
-              <Download size={20} />
-              <span>Export Timeline ({clips.length} clip{clips.length !== 1 ? 's' : ''})</span>
-            </button>
-          </div>
         </main>
       </div>
 
       {/* Horizontal Timeline at Bottom */}
-      <TimelineContainer
-        clips={clips}
-        selectedClipId={selectedClipId}
-        onSelectClip={handleSelectClip}
-        onDeleteClip={handleDeleteClip}
-        playheadPosition={currentPlaybackTime}
-        onSeekToTime={handleSeekToTime}
-        onTrimChange={handleTrimChange}
-      />
+      <TimelineErrorBoundary>
+        <TimelineContainer
+          clips={clips}
+          selectedClipId={selectedClipId}
+          onSelectClip={handleSelectClip}
+          onDeleteClip={handleDeleteClip}
+          onDuplicateClip={handleDuplicateClip}
+          onResetTrim={handleResetTrim}
+          playheadPosition={currentPlaybackTime}
+          onSeekToTime={handleSeekToTime}
+          onTrimChange={handleTrimChange}
+          onExport={() => setShowExportDialog(true)}
+          isExporting={isExporting}
+        />
+      </TimelineErrorBoundary>
 
       {/* Export Dialog */}
       <ExportDialog

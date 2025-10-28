@@ -12,6 +12,8 @@ export default function TrackArea({
   selectedClipId, 
   onSelectClip, 
   onDeleteClip, 
+  onDuplicateClip,
+  onResetTrim,
   pxPerSecond,
   zoomLevel,
   snapToGrid,
@@ -42,6 +44,8 @@ export default function TrackArea({
                 isSelected={clip.id === selectedClipId}
                 onSelect={() => onSelectClip(clip.id)}
                 onDelete={() => onDeleteClip(clip.id)}
+                onDuplicate={() => onDuplicateClip(clip.id)}
+                onResetTrim={() => onResetTrim(clip.id)}
                 width={clipWidth}
                 position={clipPosition}
                 zoomLevel={zoomLevel}

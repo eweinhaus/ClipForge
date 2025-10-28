@@ -10,10 +10,17 @@ ClipForge is a streamlined video editing application that focuses on the core wo
 
 - **Import Videos**: Drag-and-drop or file picker support for MP4, MOV, and WebM files
 - **Preview & Playback**: Smooth video playback with play/pause controls and scrubbing
-- **Trim Clips**: Set precise start and end points for video segments
+- **Professional Timeline**: Horizontal timeline with visual clip blocks and thumbnails
+- **Trim Clips**: Set precise start and end points for video segments with drag-to-trim
 - **Drag-and-Drop Reordering**: Easily reorder clips in your timeline
+- **Snap-to-Grid**: Precise trimming with 1-second grid snapping
+- **Multi-level Zoom**: Smooth zoom from 0.25x to 4x with zoom slider
+- **Keyboard Navigation**: Arrow keys for timeline navigation and clip selection
+- **Context Menu**: Right-click clip operations (Duplicate, Reset Trim, Delete)
 - **Export to MP4**: Combine trimmed and ordered clips into a single MP4 file
-- **Keyboard Shortcuts**: Efficient workflow with Space (play/pause), Delete (remove clip), and Cmd+E (export)
+- **Keyboard Shortcuts**: Efficient workflow with comprehensive shortcut support
+- **Preference Persistence**: Timeline zoom and scroll position remembered
+- **Error Recovery**: Robust error handling with graceful fallbacks
 
 ---
 
@@ -64,13 +71,19 @@ npm run make
 2. **Preview & Edit**
    - Click a clip in the timeline to preview it
    - Use the play/pause button or press Space to control playback
-   - Set trim start and end points in the Clip Editor panel
+   - Set trim start and end points in the Clip Editor panel or drag clip edges
    - Click "Apply" to save trim changes
 
-3. **Reorder Clips**
-   - Drag clips up or down in the timeline to change their order
+3. **Timeline Navigation**
+   - Use arrow keys to navigate: ← → for seeking, ↑ ↓ for clip selection
+   - Right-click clips for context menu (Duplicate, Reset Trim, Delete)
+   - Use zoom slider for precise editing (0.25x to 4x)
+   - Click "Fit to Screen" to auto-zoom all clips
 
-4. **Export**
+4. **Reorder Clips**
+   - Drag clips horizontally in the timeline to change their order
+
+5. **Export**
    - Click "Export Timeline" or press Cmd+E
    - Choose an output location
    - Wait for the export to complete
@@ -85,6 +98,10 @@ npm run make
 | `⌘ + E` | Open export dialog |
 | `Esc` | Close dialogs |
 | `Tab` | Navigate between elements |
+| `←` | Seek playhead backward (1 second) |
+| `→` | Seek playhead forward (1 second) |
+| `↑` | Select previous clip |
+| `↓` | Select next clip |
 
 ---
 
@@ -158,6 +175,7 @@ npm run make
 - **H.264 codec only**: Limited codec support in MVP
 - **No transitions or effects**: Basic cuts only (for now)
 - **macOS only**: Windows and Linux support planned
+- **Timeline width calculation**: Fit-to-screen could be more accurate
 
 ---
 

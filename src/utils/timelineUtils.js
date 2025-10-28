@@ -117,3 +117,27 @@ export function debounce(func, wait) {
     timeout = setTimeout(later, wait);
   };
 }
+
+/**
+ * Calculate zoom level to fit timeline content in viewport
+ * @param {number} totalDuration - Total duration of all clips in seconds
+ * @param {number} viewportWidth - Available viewport width in pixels
+ * @param {number} pixelsPerSecond - Base pixels per second (default: 50)
+ * @param {number} padding - Padding to leave on sides (default: 100)
+ * @returns {number} Optimal zoom level
+ */
+export function calculateFitZoom(totalDuration, viewportWidth, pixelsPerSecond = 50, padding = 100) {
+  if (totalDuration <= 0 || viewportWidth <= 0) return 1;
+  
+  const availableWidth = viewportWidth - padding;
+  const optimalZoom = availableWidth / (totalDuration * pixelsPerSecond);
+  
+  // Clamp to valid zoom levels
+  const zoomLevels = [0.25, 0.5, 1, 2, 4];
+  const clampedZoom = Math.max(0.25, Math.min(4, optimalZoom));
+  
+  // Find closest valid zoom level
+  return zoomLevels.reduce((prev, curr) => 
+    Math.abs(curr - clampedZoom) < Math.abs(prev - clampedZoom) ? curr : prev
+  );
+}

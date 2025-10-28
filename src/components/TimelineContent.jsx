@@ -13,6 +13,8 @@ export default function TimelineContent({
   selectedClipId,
   onSelectClip,
   onDeleteClip,
+  onDuplicateClip,
+  onResetTrim,
   playheadPosition,
   onSeekToTime,
   zoomLevel,
@@ -43,6 +45,8 @@ export default function TimelineContent({
               selectedClipId={selectedClipId}
               onSelectClip={onSelectClip}
               onDeleteClip={onDeleteClip}
+              onDuplicateClip={onDuplicateClip}
+              onResetTrim={onResetTrim}
               pxPerSecond={pxPerSecond}
               zoomLevel={zoomLevel}
               snapToGrid={snapToGrid}

@@ -4,6 +4,7 @@ import { formatDuration, ellipsize, formatTrimmedDuration } from '../utils/forma
 import { timeToPx, pxToTime, snap, validateTrimRange } from '../utils/timelineUtils';
 import { useThumbnailPreload } from '../hooks/useThumbnailPreload';
 import Tooltip from './Tooltip';
+import ContextMenu from './ContextMenu';
 import './ClipBlock.css';
 
 /**
@@ -15,6 +16,8 @@ export default function ClipBlock({
   isSelected, 
   onSelect, 
   onDelete, 
+  onDuplicate,
+  onResetTrim,
   width, 
   position,
   zoomLevel,
@@ -28,6 +31,7 @@ export default function ClipBlock({
   const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, timeSeconds: 0, message: '' });
   const [isHovered, setIsHovered] = useState(false);
   const [hoverCard, setHoverCard] = useState({ visible: false, x: 0, y: 0 });
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
   
   const blockRef = useRef(null);
   const startXRef = useRef(0);
@@ -169,6 +173,36 @@ export default function ClipBlock({
     }
   };
 
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY
+    });
+  };
+
+  const handleContextMenuClose = () => {
+    setContextMenu({ visible: false, x: 0, y: 0 });
+  };
+
+  const handleDuplicate = () => {
+    onDuplicate();
+    handleContextMenuClose();
+  };
+
+  const handleResetTrim = () => {
+    onResetTrim();
+    handleContextMenuClose();
+  };
+
+  const handleDeleteFromMenu = () => {
+    onDelete();
+    handleContextMenuClose();
+  };
+
   // Calculate current width based on draft trim values
   const currentWidth = timeToPx(draftTrimEnd - draftTrimStart, zoomLevel);
   const currentPosition = position; // TrackArea handles trimStart positioning
@@ -186,6 +220,7 @@ export default function ClipBlock({
         onClick={handleClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onContextMenu={handleContextMenu}
         role="listitem"
         tabIndex={0}
         onKeyDown={(e) => {
@@ -277,6 +312,16 @@ export default function ClipBlock({
           <div className="hover-card-arrow"></div>
         </div>
       )}
+      
+      {/* Context Menu */}
+      <ContextMenu
+        isOpen={contextMenu.visible}
+        position={{ x: contextMenu.x, y: contextMenu.y }}
+        onClose={handleContextMenuClose}
+        onDelete={handleDeleteFromMenu}
+        onDuplicate={handleDuplicate}
+        onResetTrim={handleResetTrim}
+      />
     </>
   );
 }

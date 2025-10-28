@@ -1,5 +1,5 @@
 .timeline-controls {
-  height: 40px;
+  height: 50px;
   background: #ffffff;
   border-top: 1px solid #e9ecef;
   display: flex;
@@ -14,15 +14,15 @@
   gap: 16px;
 }
 
+.timeline-controls-right {
+  display: flex;
+  align-items: center;
+}
+
 .zoom-controls {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.snap-controls {
-  display: flex;
-  align-items: center;
 }
 
 .zoom-btn {
@@ -49,6 +49,54 @@
   cursor: not-allowed;
 }
 
+.zoom-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 8px;
+}
+
+.zoom-slider {
+  width: 120px;
+  height: 4px;
+  background: #e9ecef;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #007bff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.zoom-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #007bff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.zoom-slider:hover::-webkit-slider-thumb {
+  background: #0056b3;
+}
+
+.zoom-slider:hover::-moz-range-thumb {
+  background: #0056b3;
+}
+
 .zoom-level {
   font-size: 14px;
   font-weight: 500;
@@ -57,32 +105,27 @@
   text-align: center;
 }
 
-.snap-btn {
-  width: 32px;
-  height: 32px;
-  border: 1px solid #dee2e6;
-  background: #ffffff;
-  border-radius: 4px;
+.export-btn {
+  background: #4A90E2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: #495057;
+  gap: 6px;
   transition: all 0.2s ease;
 }
 
-.snap-btn:hover {
-  background: #f8f9fa;
-  border-color: #adb5bd;
+.export-btn:hover:not(:disabled) {
+  background: #357ABD;
 }
 
-.snap-btn.active {
-  background: #007bff;
-  border-color: #007bff;
-  color: #ffffff;
-}
-
-.snap-btn.active:hover {
-  background: #0056b3;
-  border-color: #0056b3;
+.export-btn:disabled {
+  background: #999;
+  cursor: not-allowed;
+  opacity: 0.6;
 }

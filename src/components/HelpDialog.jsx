@@ -103,6 +103,84 @@ export default function HelpDialog({ isOpen, onClose }) {
             </div>
           </section>
 
+          {/* Timeline Navigation Section */}
+          <section className="help-section">
+            <div className="help-section-header">
+              <Keyboard size={20} />
+              <h3>Timeline Navigation</h3>
+            </div>
+            <div className="shortcuts-list">
+              <div className="shortcut-item">
+                <kbd>←</kbd> <span className="shortcut-description">Left Arrow</span>
+                <span>Seek playhead backward (1 second)</span>
+              </div>
+              <div className="shortcut-item">
+                <kbd>→</kbd> <span className="shortcut-description">Right Arrow</span>
+                <span>Seek playhead forward (1 second)</span>
+              </div>
+              <div className="shortcut-item">
+                <kbd>↑</kbd> <span className="shortcut-description">Up Arrow</span>
+                <span>Select previous clip</span>
+              </div>
+              <div className="shortcut-item">
+                <kbd>↓</kbd> <span className="shortcut-description">Down Arrow</span>
+                <span>Select next clip</span>
+              </div>
+            </div>
+          </section>
+
+          {/* Timeline Context Menu Section */}
+          <section className="help-section">
+            <div className="help-section-header">
+              <Keyboard size={20} />
+              <h3>Timeline Context Menu</h3>
+            </div>
+            <div className="shortcuts-list">
+              <div className="shortcut-item">
+                <kbd>Right-click</kbd> <span className="shortcut-description">clip block</span>
+                <span>Open context menu</span>
+              </div>
+              <div className="shortcut-item">
+                <kbd>Duplicate</kbd> <span className="shortcut-description">menu option</span>
+                <span>Create a copy of the clip</span>
+              </div>
+              <div className="shortcut-item">
+                <kbd>Reset Trim</kbd> <span className="shortcut-description">menu option</span>
+                <span>Restore clip to full duration</span>
+              </div>
+              <div className="shortcut-item">
+                <kbd>Delete</kbd> <span className="shortcut-description">menu option</span>
+                <span>Remove clip from timeline</span>
+              </div>
+            </div>
+          </section>
+
+          {/* Timeline Controls Section */}
+          <section className="help-section">
+            <div className="help-section-header">
+              <Keyboard size={20} />
+              <h3>Timeline Controls</h3>
+            </div>
+            <div className="shortcuts-list">
+              <div className="shortcut-item">
+                <kbd>Zoom Slider</kbd> <span className="shortcut-description">drag to adjust</span>
+                <span>Smooth zoom from 0.25x to 4x</span>
+              </div>
+              <div className="shortcut-item">
+                <kbd>Fit to Screen</kbd> <span className="shortcut-description">button</span>
+                <span>Auto-zoom to fit all clips</span>
+              </div>
+              <div className="shortcut-item">
+                <kbd>Snap to Grid</kbd> <span className="shortcut-description">toggle button</span>
+                <span>Enable/disable 1-second snapping</span>
+              </div>
+              <div className="shortcut-item">
+                <kbd>Preferences</kbd> <span className="shortcut-description">auto-saved</span>
+                <span>Zoom level and scroll position remembered</span>
+              </div>
+            </div>
+          </section>
+
           {/* About Section */}
           <section className="help-section">
             <div className="help-section-header">

@@ -7,6 +7,10 @@
   z-index: 10;
 }
 
+.playhead.dragging {
+  cursor: grabbing;
+}
+
 .playhead-line {
   width: 2px;
   height: 100%;
@@ -16,12 +20,28 @@
 
 .playhead-handle {
   position: absolute;
-  top: -4px;
-  left: -3px;
-  width: 8px;
-  height: 8px;
+  top: -6px;
+  left: -5px;
+  width: 12px;
+  height: 12px;
   background: #dc3545;
   border-radius: 50%;
   border: 2px solid #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  cursor: grab;
+  transition: transform 0.1s ease;
+}
+
+.playhead-handle:hover {
+  transform: scale(1.1);
+}
+
+.playhead-handle:active {
+  cursor: grabbing;
+  transform: scale(1.2);
+}
+
+.playhead.dragging .playhead-handle {
+  transform: scale(1.2);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
 }

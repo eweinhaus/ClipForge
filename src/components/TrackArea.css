@@ -1,0 +1,12 @@
+.track-area {
+  height: 100%;
+  position: relative;
+}
+
+.track {
+  height: 60px;
+  position: relative;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  margin: 8px 0;
+}

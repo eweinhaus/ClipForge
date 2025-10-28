@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Play, Pause, Video, AlertTriangle } from 'lucide-react';
 import { formatDuration, formatResolution } from '../utils/formatters';
 import './VideoPreview.css';
@@ -7,7 +7,7 @@ import './VideoPreview.css';
  * VideoPreview Component
  * Displays video player with controls for the selected clip
  */
-export default function VideoPreview({ clip, onPlaybackChange, seekToTime }) {
+const VideoPreview = forwardRef(({ clip, onPlaybackChange }, ref) => {
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -15,19 +15,21 @@ export default function VideoPreview({ clip, onPlaybackChange, seekToTime }) {
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  // Handle seeking from timeline
-  useEffect(() => {
-    if (seekToTime !== undefined && videoRef.current && clip) {
-      const trimStart = clip.trimStart || 0;
-      const trimEnd = clip.trimEnd || clip.duration || 0;
-      
-      // Clamp seek time within trim range
-      const clampedTime = Math.max(trimStart, Math.min(trimEnd, seekToTime));
-      
-      videoRef.current.currentTime = clampedTime;
-      setCurrentTime(clampedTime);
+  // Expose seek method to parent component
+  useImperativeHandle(ref, () => ({
+    seekTo: (time) => {
+      if (videoRef.current && clip) {
+        const trimStart = clip.trimStart || 0;
+        const trimEnd = clip.trimEnd || clip.duration || 0;
+        
+        // Clamp seek time within trim range
+        const clampedTime = Math.max(trimStart, Math.min(trimEnd, time));
+        
+        videoRef.current.currentTime = clampedTime;
+        setCurrentTime(clampedTime);
+      }
     }
-  }, [seekToTime, clip]);
+  }));
 
   // Reset state when clip changes
   useEffect(() => {
@@ -306,4 +308,8 @@ export default function VideoPreview({ clip, onPlaybackChange, seekToTime }) {
       </div>
     </div>
   );
-}
+});
+
+VideoPreview.displayName = 'VideoPreview';
+
+export default VideoPreview;

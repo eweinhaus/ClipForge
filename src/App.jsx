@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Download, HelpCircle } from 'lucide-react';
 import { ToastProvider, useToast } from './utils/toastContext';
 import { generateUuid } from './utils/uuid';
@@ -27,8 +27,9 @@ function AppContent() {
   const [exportProgress, setExportProgress] = useState(0);
   const [exportError, setExportError] = useState(null);
   
-  // Help dialog state
   const [showHelpDialog, setShowHelpDialog] = useState(false);
+  
+  const videoPreviewRef = useRef(null);
   
   const { showToast } = useToast();
 
@@ -210,9 +211,9 @@ function AppContent() {
    * @param {number} time - Time in seconds to seek to
    */
   const handleSeekToTime = (time) => {
-    // This will be handled by VideoPreview component
-    // For now, we'll just update the playback time state
-    setCurrentPlaybackTime(time);
+    if (videoPreviewRef.current) {
+      videoPreviewRef.current.seekTo(time);
+    }
   };
 
   /**
@@ -282,9 +283,9 @@ function AppContent() {
 
         <main className="preview-panel">
           <VideoPreview
+            ref={videoPreviewRef}
             clip={clips.find(c => c.id === selectedClipId) || null}
             onPlaybackChange={setCurrentPlaybackTime}
-            seekToTime={currentPlaybackTime}
           />
           <ClipEditor
             clip={clips.find(c => c.id === selectedClipId) || null}

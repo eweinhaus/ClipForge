@@ -17,6 +17,8 @@
 - [ ] Recorded video is 30fps, at least 720p resolution
 - [ ] Audio captured from system/microphone
 - [ ] No crashes, graceful error handling (permission denied, etc.)
+- [ ] Permission testing completed on fresh Mac
+- [ ] Permission request flow implemented with clear instructions
 
 ### Tasks
 
@@ -165,39 +167,66 @@
 
 ---
 
-#### Task 9.5: Implement Permission Handling
-- [ ] Request permissions upfront (before recording):
+#### Task 9.5: Implement Permission Testing & Request Flow
+- [ ] Create permission testing utility:
   ```javascript
-  useEffect(() => {
-    // Request screen capture permission once on startup
-    navigator.mediaDevices.getDisplayMedia({ video: true })
-      .then(stream => {
-        stream.getTracks().forEach(track => track.stop());
-        // User granted permission
-      })
-      .catch(err => {
-        console.log('Screen capture permission denied');
-      });
-  }, []);
+  async function testScreenPermissions() {
+    try {
+      const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] });
+      return sources.length > 0;
+    } catch (err) {
+      return false;
+    }
+  }
   ```
-- [ ] Handle permission denied errors gracefully
-- [ ] Show helpful message if permission denied
+- [ ] Implement permission request flow with clear instructions:
+  ```javascript
+  const requestScreenPermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ 
+        video: { 
+          displaySurface: 'monitor',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          frameRate: { ideal: 30 }
+        },
+        audio: true 
+      });
+      stream.getTracks().forEach(track => track.stop());
+      return true;
+    } catch (err) {
+      showPermissionError('Screen recording permission denied. Please enable in System Preferences > Security & Privacy > Screen Recording');
+      return false;
+    }
+  };
+  ```
+- [ ] Test permissions on fresh Mac installation
+- [ ] Handle permission denied with helpful error messages
+- [ ] Show direct link to System Preferences if needed
+- [ ] Implement fallback behavior if permissions fail
 
 **Acceptance:**
-- Permission dialog appears on first use
-- Graceful handling if denied
+- Permission testing works on fresh Mac
+- Clear permission request flow with instructions
+- Graceful handling if denied with helpful messages
+- Direct link to System Preferences provided
 
 ---
 
-#### Task 9.6: Test Screen Recording
+#### Task 9.6: Test Screen Recording & Performance
 - [ ] Manual test: record 15-second screen capture
 - [ ] Verify: clip appears in timeline with correct duration/resolution
+- [ ] Verify: recording maintains 30fps during capture
 - [ ] Export video with screen recording
 - [ ] Verify: exported video contains recorded screen, is playable
+- [ ] Test on fresh Mac with permission flow
+- [ ] Verify: permission request appears and works correctly
 
 **Acceptance:**
 - Recording works end-to-end
 - Exported video contains recorded screen
+- 30fps maintained during recording
+- Permission testing works on fresh Mac
 
 ---
 
@@ -243,6 +272,8 @@ Scenario: Record screen and add to timeline
 - [ ] On stop, clip added to overlay track (default)
 - [ ] Audio synced with video in export
 - [ ] No crashes, graceful error handling
+- [ ] Permission testing completed on fresh Mac
+- [ ] Camera permission request flow implemented
 
 ### Tasks
 
@@ -317,14 +348,19 @@ Scenario: Record screen and add to timeline
 
 ---
 
-#### Task 10.5: Test Webcam Recording
+#### Task 10.5: Test Webcam Recording & Permissions
 - [ ] Manual test: record 10 seconds of webcam
 - [ ] Verify: clip appears in overlay track
+- [ ] Verify: recording maintains 30fps during capture
 - [ ] Export and verify: audio synced, video plays
+- [ ] Test on fresh Mac with camera permission flow
+- [ ] Verify: camera permission request appears and works correctly
 
 **Acceptance:**
 - Recording works end-to-end
 - Audio synced in export
+- 30fps maintained during recording
+- Camera permission testing works on fresh Mac
 
 ---
 
@@ -368,6 +404,8 @@ Scenario: Record webcam and add as overlay
 - [ ] Audio from both sources mixed
 - [ ] Export shows composite correctly
 - [ ] Looks professional (no janky compositing)
+- [ ] Maintains 30fps during compositing
+- [ ] Permission testing for both screen and camera
 
 ### Tasks
 
@@ -393,7 +431,7 @@ Scenario: Record webcam and add as overlay
     screenVideo.srcObject = screenStream;
     webcamVideo.srcObject = webcamStream;
     
-    // Animation loop to composite frames
+    // Animation loop to composite frames at 30fps
     const compositeFrame = () => {
       // Draw screen
       ctx.drawImage(screenVideo, 0, 0, canvas.width, canvas.height);
@@ -413,7 +451,7 @@ Scenario: Record webcam and add as overlay
     
     compositeFrame();
     
-    // Capture canvas stream + audio for recording
+    // Capture canvas stream + audio for recording at 30fps
     const canvasStream = canvas.captureStream(30);
     const audioTracks = [...screenStream.getAudioTracks(), ...webcamStream.getAudioTracks()];
     audioTracks.forEach(track => canvasStream.addTrack(track));
@@ -425,9 +463,10 @@ Scenario: Record webcam and add as overlay
   ```
 
 **Acceptance:**
-- Canvas compositing works
+- Canvas compositing works at 30fps
 - Both streams visible in composite
 - Audio captured from both sources
+- Permission testing for both screen and camera
 
 ---
 
@@ -478,16 +517,21 @@ Scenario: Record webcam and add as overlay
 
 ---
 
-#### Task 11.5: Test Composite Recording
+#### Task 11.5: Test Composite Recording & Performance
 - [ ] Manual test: record 20 seconds of screen + webcam
 - [ ] Verify: clip appears in timeline with correct duration/resolution
 - [ ] Verify: both screen and webcam visible in preview
+- [ ] Verify: compositing maintains 30fps during recording
 - [ ] Export and verify: exported video shows composite, audio synced
+- [ ] Test permission flow for both screen and camera
+- [ ] Verify: composite recording works on fresh Mac
 
 **Acceptance:**
 - Recording works end-to-end
 - Composite looks professional
 - Audio synced
+- 30fps maintained during compositing
+- Permission testing works for both sources
 
 ---
 
@@ -531,6 +575,7 @@ Scenario: Record screen + webcam composite
 - [ ] Visual distinction between tracks
 - [ ] Can adjust timing of overlay independently
 - [ ] Smooth drag-and-drop between tracks
+- [ ] Preview maintains 30fps during multi-track editing
 
 ### Tasks
 
@@ -601,11 +646,12 @@ Scenario: Record screen + webcam composite
 
 ---
 
-#### Task 12.4: Update Preview for Multi-Track
+#### Task 12.4: Update Preview for Multi-Track (30fps)
 - [ ] VideoPreview needs to show composite (if overlay exists):
   - Main track plays in center
   - Overlay track composited on top (if exists)
   - Use canvas or CSS overlay for preview
+  - Maintain 30fps during multi-track preview
 - [ ] Optional: Canvas-based compositing for live preview:
   ```javascript
   const renderPreview = (mainClip, overlayClip) => {
@@ -615,16 +661,20 @@ Scenario: Record screen + webcam composite
     // Draw main
     ctx.drawImage(mainVideo, 0, 0, canvas.width, canvas.height);
     
-    // Draw overlay inset (if exists)
+    // Draw overlay inset (if exists) at 30fps
     if (overlayClip) {
       ctx.drawImage(overlayVideo, canvas.width - 240 - 10, canvas.height - 240 - 10, 240, 240);
     }
+    
+    // Maintain 30fps refresh rate
+    requestAnimationFrame(() => renderPreview(mainClip, overlayClip));
   };
   ```
 
 **Acceptance:**
 - Preview shows composite correctly
 - Overlay visible on top of main
+- 30fps maintained during multi-track preview
 
 ---
 
@@ -743,6 +793,7 @@ Scenario: Edit with multi-track timeline
 - [ ] Export respects volume levels
 - [ ] Audio synced with video in multi-track export
 - [ ] Visual indicator: muted clips show 🔇 icon
+- [ ] Maintain 30fps during audio adjustments
 
 ### Tasks
 

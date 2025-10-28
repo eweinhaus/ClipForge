@@ -5,7 +5,7 @@
 
 Build on MVP with **native recording** (screen + webcam) and **multi-track timeline**. Users can record their screen or webcam, import existing videos, edit on a timeline with layering, and export professional videos.
 
-**Strategy:** Record features first (after MVP is rock-solid). Multi-track is nice-to-have but recording is required.
+**Strategy:** Record features first (after MVP is rock-solid). Multi-track is required for full submission.
 
 **New in Full Submission:**
 - Screen recording (full screen or window selection)
@@ -14,6 +14,8 @@ Build on MVP with **native recording** (screen + webcam) and **multi-track timel
 - Multi-track timeline (main video + overlay track)
 - Better UX: audio controls, visual feedback
 - Auto-save project state
+- Permission testing and request flow
+- 30fps preview playback requirement
 
 ---
 
@@ -119,10 +121,18 @@ const stream = await navigator.mediaDevices.getUserMedia({
 });
 ```
 
+**Permission Testing & Request Flow:**
+- Test screen recording permissions on fresh macOS installation
+- Implement permission request flow before recording starts
+- Show clear permission dialogs with instructions
+- Handle permission denied gracefully with helpful error messages
+- Test on both development machine and fresh Mac
+
 **Edge Cases:**
-- User denies permission → show "Permission denied. Enable in System Preferences"
+- User denies permission → show "Permission denied. Enable in System Preferences" with direct link
 - Recording > 2GB → warn user, allow to continue
 - Source disappears mid-record → pause, warn user
+- Permission revoked during recording → stop recording, show error
 
 **Demo Tip:** Record a quick screen capture (15-30s). Smooth recording = polished. Test permissions on fresh Mac.
 
@@ -147,6 +157,14 @@ const stream = await navigator.mediaDevices.getUserMedia({
 - MediaRecorder captures both streams
 - Save to file, create Clip with hasAudio: true
 - Auto-assign to overlay track
+- Test camera permissions on fresh Mac
+- Handle camera access denied gracefully
+
+**Permission Testing:**
+- Test camera permissions on fresh macOS installation
+- Implement camera permission request flow
+- Show clear permission dialogs with instructions
+- Handle camera permission denied with helpful error messages
 
 **Demo Tip:** Record 10 seconds of yourself. This is memorable and shows ease of use. Test audio sync.
 
@@ -169,13 +187,15 @@ const stream = await navigator.mediaDevices.getUserMedia({
 - Composite on canvas (drawImage for each stream)
 - Canvas.captureStream() → MediaRecorder
 - Result: single file with composite video + mixed audio
+- Maintain 30fps during compositing for smooth preview playback
+- Test both screen and camera permissions on fresh Mac
 
 **Canvas Compositing Code (Pseudocode):**
 ```javascript
-const canvasStream = canvas.captureStream(30);
+const canvasStream = canvas.captureStream(30); // 30fps requirement
 const ctx = canvas.getContext('2d');
 
-// Animate loop
+// Animate loop at 30fps
 setInterval(() => {
   // Draw screen
   ctx.drawImage(screenVideo, 0, 0, canvasWidth, canvasHeight);
@@ -186,17 +206,17 @@ setInterval(() => {
     canvasWidth - size - 10,
     canvasHeight - size - 10,
     size, size);
-}, 1000/30);
+}, 1000/30); // 30fps
 
 // Record composite
 const recorder = new MediaRecorder(canvasStream);
 recorder.start();
 ```
 
-**Audio Mixing:**
-- Use Web Audio API AudioContext
-- Create GainNodes for each stream
-- Merge into destination (recorder)
+**Permission Testing:**
+- Test both screen and camera permissions simultaneously
+- Handle partial permission grants (screen but not camera, etc.)
+- Implement fallback to single-source recording if composite fails
 
 **Demo Tip:** This is impressive. Show a 10-second screen recording with webcam inset. Proves you understand compositing. This is the standout feature.
 
@@ -216,8 +236,9 @@ recorder.start();
 **Implementation Details:**
 - MultiTrackTimeline component with 2 lanes
 - Drag & drop updates clip.track property
-- Preview: canvas overlay shows both tracks composited
+- Preview: canvas overlay shows both tracks composited at 30fps
 - Export: FFmpeg filtergraph composites layers
+- Maintain 30fps preview playback during multi-track editing
 
 **FFmpeg Export Command:**
 ```bash
@@ -251,6 +272,7 @@ ffmpeg -i main.mp4 -i overlay.mp4 \
 - Store audioVolume in Clip object
 - Export: FFmpeg audio filter (`-af "volume=X"`)
 - UI: per-clip volume slider + mute toggle
+- Maintain 30fps preview playback during audio adjustments
 
 **Demo Tip:** Show toggling mute on a clip. This is subtle but shows polish.
 
@@ -372,9 +394,11 @@ if (overlayClips.length > 0) {
 - Import + metadata: < 2s per clip
 - Recording start: < 1 second
 - Timeline responsive: 10+ clips across 2 tracks
-- Playback smooth: 30fps+
+- Preview playback: 30fps minimum (required)
+- Canvas compositing: 30fps during recording
 - Export: 2-3 minute final video in < 5 minutes
 - Memory: no leaks during 20-minute session
+- Permission requests: < 2 seconds to show dialog
 
 ---
 
@@ -391,6 +415,8 @@ if (overlayClips.length > 0) {
 - ✅ Demo video (3-5 min) is polished and shows complete workflow
 - ✅ README includes recording + multi-track usage instructions
 - ✅ GitHub release ready for download
+- ✅ Permission testing completed on fresh Mac
+- ✅ 30fps preview playback maintained throughout
 
 ---
 

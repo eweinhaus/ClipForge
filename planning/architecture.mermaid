@@ -52,7 +52,7 @@ graph TB
         
         MediaProc["mediaProcessor.js<br/>FFmpeg wrapper<br/>Stitch clips<br/>Apply trims<br/>Export to MP4"]
         
-        CaptureSvc["captureService.js<br/>Desktop capture API<br/>Screen recording<br/>Webcam recording<br/>Audio capture"]
+        CaptureSvc["captureService.js<br/>Desktop capture API<br/>Screen recording<br/>Webcam recording<br/>Audio capture<br/>Permission testing<br/>30fps compositing"]
         
         ChildProcs["Child Processes<br/>FFmpeg instances"]
     end
@@ -60,8 +60,8 @@ graph TB
     subgraph System["System Resources"]
         FFmpeg["FFmpeg<br/>installed or bundled"]
         FileSystem["File System<br/>read and write videos"]
-        Camera["Camera and Mic<br/>getUserMedia"]
-        Screen["Screen<br/>desktopCapturer"]
+        Camera["Camera and Mic<br/>getUserMedia<br/>Permission testing"]
+        Screen["Screen<br/>desktopCapturer<br/>Permission testing"]
     end
     
     Renderer -->|invoke readMetadata| IPCBridge

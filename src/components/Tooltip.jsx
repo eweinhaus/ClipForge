@@ -20,7 +20,7 @@ export default function Tooltip({
       className="timeline-tooltip"
       style={{
         left: `${x}px`,
-        top: `${y - 40}px`,
+        top: `${Math.max(10, y - 40)}px`,
         transform: 'translateX(-50%)'
       }}
     >

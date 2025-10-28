@@ -152,7 +152,7 @@ export default function ClipBlock({
 
   // Calculate current width based on draft trim values
   const currentWidth = timeToPx(draftTrimEnd - draftTrimStart, zoomLevel);
-  const currentPosition = position + timeToPx(draftTrimStart, zoomLevel);
+  const currentPosition = position; // TrackArea handles trimStart positioning
 
   return (
     <>

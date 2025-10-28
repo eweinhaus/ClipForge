@@ -24,8 +24,8 @@ export default function TrackArea({
         {clips.map((clip) => {
           const trimmedDuration = (clip.trimEnd || clip.duration || 0) - (clip.trimStart || 0);
           const clipWidth = trimmedDuration * pxPerSecond;
-          const clipPosition = currentPosition;
-          currentPosition += clipWidth;
+          const clipPosition = currentPosition + (clip.trimStart || 0) * pxPerSecond;
+          currentPosition += clip.duration * pxPerSecond; // Use full duration for spacing
 
           return (
             <ClipBlock

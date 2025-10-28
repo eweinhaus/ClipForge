@@ -228,3 +228,48 @@
     border-top-color: rgba(255, 255, 255, 0.95);
   }
 }
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .clip-block {
+    transition: none;
+  }
+  
+  .trim-handle {
+    transition: none;
+  }
+  
+  .clip-delete {
+    transition: none;
+  }
+  
+  .hover-card-content {
+    backdrop-filter: none;
+  }
+  
+  .clip-filename-overlay,
+  .clip-duration-overlay {
+    backdrop-filter: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .clip-filename-overlay {
+    background: #000000;
+    color: #ffffff;
+    border: 1px solid #ffffff;
+  }
+  
+  .clip-duration-overlay {
+    background: #000000;
+    color: #ffffff;
+    border: 1px solid #ffffff;
+  }
+  
+  .hover-card-content {
+    background: #000000;
+    color: #ffffff;
+    border: 2px solid #ffffff;
+  }
+}

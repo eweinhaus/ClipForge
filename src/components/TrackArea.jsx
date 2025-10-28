@@ -1,5 +1,6 @@
 import React from 'react';
 import ClipBlock from './ClipBlock';
+import ClipBlockErrorBoundary from './ClipBlockErrorBoundary';
 import './TrackArea.css';
 
 /**
@@ -22,24 +23,32 @@ export default function TrackArea({
     <div className="track-area">
       <div className="track">
         {clips.map((clip) => {
-          const trimmedDuration = (clip.trimEnd || clip.duration || 0) - (clip.trimStart || 0);
-          const clipWidth = trimmedDuration * pxPerSecond;
-          const clipPosition = currentPosition + (clip.trimStart || 0) * pxPerSecond;
-          currentPosition += clip.duration * pxPerSecond; // Use full duration for spacing
+          // Ensure clip has required properties with fallbacks
+          const clipDuration = clip.duration || 0;
+          const clipTrimStart = clip.trimStart || 0;
+          const clipTrimEnd = clip.trimEnd || clipDuration;
+          
+          const trimmedDuration = clipTrimEnd - clipTrimStart;
+          const clipWidth = Math.max(trimmedDuration * pxPerSecond, 20); // Minimum 20px width
+          const clipPosition = currentPosition + clipTrimStart * pxPerSecond;
+          
+          // Update position for next clip (use full duration for spacing)
+          currentPosition += clipDuration * pxPerSecond;
 
           return (
-            <ClipBlock
-              key={clip.id}
-              clip={clip}
-              isSelected={clip.id === selectedClipId}
-              onSelect={() => onSelectClip(clip.id)}
-              onDelete={() => onDeleteClip(clip.id)}
-              width={clipWidth}
-              position={clipPosition}
-              zoomLevel={zoomLevel}
-              snapToGrid={snapToGrid}
-              onTrimChange={onTrimChange}
-            />
+            <ClipBlockErrorBoundary key={clip.id} clip={clip}>
+              <ClipBlock
+                clip={clip}
+                isSelected={clip.id === selectedClipId}
+                onSelect={() => onSelectClip(clip.id)}
+                onDelete={() => onDeleteClip(clip.id)}
+                width={clipWidth}
+                position={clipPosition}
+                zoomLevel={zoomLevel}
+                snapToGrid={snapToGrid}
+                onTrimChange={onTrimChange}
+              />
+            </ClipBlockErrorBoundary>
           );
         })}
       </div>

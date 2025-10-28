@@ -58,8 +58,9 @@ describe('formatters', () => {
 
     test('handles edge cases', () => {
       expect(ellipsize('', 10)).toBe('');
-      expect(ellipsize(null, 10)).toBe(null);
-      expect(ellipsize(undefined, 10)).toBe(undefined);
+      expect(ellipsize(null, 10)).toBe('');
+      expect(ellipsize(undefined, 10)).toBe('');
+      expect(ellipsize(123, 10)).toBe(''); // Non-string input
     });
   });
 
@@ -73,6 +74,9 @@ describe('formatters', () => {
     test('handles edge cases', () => {
       expect(formatTrimmedDuration(0, 0)).toBe('0:00');
       expect(formatTrimmedDuration(10, 5)).toBe('0:00'); // Invalid range
+      expect(formatTrimmedDuration(null, 10)).toBe('0:00'); // Invalid input
+      expect(formatTrimmedDuration(5, null)).toBe('0:00'); // Invalid input
+      expect(formatTrimmedDuration('5', '10')).toBe('0:00'); // Non-number input
     });
   });
 });

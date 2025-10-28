@@ -24,6 +24,14 @@ describe('useThumbnailPreload', () => {
     expect(result.current.cachedSrc).toBeUndefined();
   });
 
+  test('handles missing clipId gracefully', () => {
+    const { result } = renderHook(() => useThumbnailPreload(null, 'test-thumbnail.jpg'));
+    
+    expect(result.current.isVisible).toBe(false);
+    expect(result.current.isLoaded).toBe(false);
+    expect(result.current.hasError).toBe(false);
+  });
+
   test('sets up IntersectionObserver on mount', () => {
     renderHook(() => useThumbnailPreload('test-id', 'test-thumbnail.jpg'));
     
@@ -140,5 +148,20 @@ describe('useThumbnailPreload', () => {
     unmount();
     
     expect(mockDisconnect).toHaveBeenCalled();
+  });
+
+  test('handles missing IntersectionObserver gracefully', () => {
+    const originalIntersectionObserver = window.IntersectionObserver;
+    delete window.IntersectionObserver;
+    
+    const { result } = renderHook(() => useThumbnailPreload('test-id', 'test-thumbnail.jpg'));
+    
+    // Should still work without IntersectionObserver
+    expect(result.current.isVisible).toBe(false);
+    expect(result.current.isLoaded).toBe(false);
+    expect(result.current.hasError).toBe(false);
+    
+    // Restore IntersectionObserver
+    window.IntersectionObserver = originalIntersectionObserver;
   });
 });

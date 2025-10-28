@@ -49,7 +49,8 @@ export function formatFileSize(bytes) {
  * @returns {string} Ellipsized text
  */
 export function ellipsize(text, maxLength = 20) {
-  if (!text || text.length <= maxLength) return text;
+  if (!text || typeof text !== 'string') return '';
+  if (text.length <= maxLength) return text;
   return `${text.substring(0, maxLength)}...`;
 }
 
@@ -60,7 +61,10 @@ export function ellipsize(text, maxLength = 20) {
  * @returns {string} Formatted trimmed duration
  */
 export function formatTrimmedDuration(trimStart, trimEnd) {
-  const duration = trimEnd - trimStart;
+  if (typeof trimStart !== 'number' || typeof trimEnd !== 'number') {
+    return '0:00';
+  }
+  const duration = Math.max(0, trimEnd - trimStart);
   return formatDuration(duration);
 }
 

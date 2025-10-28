@@ -36,6 +36,7 @@ export default function ClipBlock({
   
   // Use thumbnail preloading hook
   const { elementRef, isLoaded, hasError, cachedSrc } = useThumbnailPreload(clip.id, clip.thumbnail);
+  
   // Update draft values when clip changes
   useEffect(() => {
     setDraftTrimStart(clip.trimStart);
@@ -54,14 +55,16 @@ export default function ClipBlock({
     originalTrimEndRef.current = clip.trimEnd;
     
     // Show tooltip
-    const rect = blockRef.current.getBoundingClientRect();
-    setTooltip({
-      visible: true,
-      x: e.clientX,
-      y: rect.top,
-      timeSeconds: edge === 'left' ? clip.trimStart : clip.trimEnd,
-      message: `Dragging ${edge} edge`
-    });
+    const rect = blockRef.current?.getBoundingClientRect();
+    if (rect) {
+      setTooltip({
+        visible: true,
+        x: e.clientX,
+        y: rect.top,
+        timeSeconds: edge === 'left' ? clip.trimStart : clip.trimEnd,
+        message: `Dragging ${edge} edge`
+      });
+    }
   };
 
   // Handle mouse move during edge drag
@@ -148,7 +151,7 @@ export default function ClipBlock({
     setIsHovered(true);
     
     // Show hover card with full filename and original duration
-    if (!isDraggingEdge) {
+    if (!isDraggingEdge && blockRef.current) {
       const rect = blockRef.current.getBoundingClientRect();
       setHoverCard({
         visible: true,
@@ -185,7 +188,7 @@ export default function ClipBlock({
         onMouseLeave={handleMouseLeave}
         role="listitem"
         tabIndex={0}
-        onKeyPress={(e) => {
+        onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onSelect();

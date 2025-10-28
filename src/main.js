@@ -69,8 +69,9 @@ const createWindow = () => {
   });
 };
 
-// Import fileManager
+// Import fileManager and mediaProcessor
 const fileManager = require('../electron/fileManager');
+const mediaProcessor = require('../electron/mediaProcessor');
 
 // Register IPC handlers
 ipcMain.handle('read-metadata', async (event, filePath) => {
@@ -115,12 +116,59 @@ ipcMain.handle('select-file', async (event) => {
   }
 });
 
-ipcMain.handle('export-timeline', async (event, data) => {
-  throw new Error('Not implemented - will be added in PR-5');
+ipcMain.handle('export-timeline', async (event, { clips, outputPath }) => {
+  try {
+    console.log('[IPC] export-timeline request received', {
+      clipsCount: clips.length,
+      outputPath
+    });
+    
+    await mediaProcessor.exportTimeline(clips, outputPath, (progress) => {
+      // Send progress updates to renderer
+      mainWindow.webContents.send('export-progress', progress);
+    });
+    
+    console.log('[IPC] Export completed successfully');
+    return { success: true, outputPath };
+  } catch (err) {
+    console.error('[IPC] Export failed:', {
+      errorType: err.message,
+      userMessage: err.userMessage,
+      outputPath
+    });
+    
+    // Return error info to renderer instead of throwing
+    return {
+      success: false,
+      error: {
+        type: err.message || 'EXPORT_FAILED',
+        message: err.userMessage || 'Export failed',
+        details: err.details || err.message
+      }
+    };
+  }
 });
 
 ipcMain.handle('select-save-location', async () => {
-  throw new Error('Not implemented - will be added in PR-5');
+  try {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Save Video As',
+      defaultPath: 'ClipForge_Export.mp4',
+      filters: [
+        { name: 'MP4 Video', extensions: ['mp4'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    });
+
+    if (result.canceled) {
+      return { canceled: true };
+    }
+
+    return { canceled: false, filePath: result.filePath };
+  } catch (err) {
+    console.error('[IPC] Save dialog error:', err);
+    return { canceled: true, error: err.message };
+  }
 });
 
 // This method will be called when Electron has finished

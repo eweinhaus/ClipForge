@@ -7,13 +7,27 @@ import './VideoPreview.css';
  * VideoPreview Component
  * Displays video player with controls for the selected clip
  */
-export default function VideoPreview({ clip, onPlaybackChange }) {
+export default function VideoPreview({ clip, onPlaybackChange, seekToTime }) {
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
+
+  // Handle seeking from timeline
+  useEffect(() => {
+    if (seekToTime !== undefined && videoRef.current && clip) {
+      const trimStart = clip.trimStart || 0;
+      const trimEnd = clip.trimEnd || clip.duration || 0;
+      
+      // Clamp seek time within trim range
+      const clampedTime = Math.max(trimStart, Math.min(trimEnd, seekToTime));
+      
+      videoRef.current.currentTime = clampedTime;
+      setCurrentTime(clampedTime);
+    }
+  }, [seekToTime, clip]);
 
   // Reset state when clip changes
   useEffect(() => {

@@ -4,7 +4,7 @@ import { ToastProvider, useToast } from './utils/toastContext';
 import { generateUuid } from './utils/uuid';
 import { ERROR_MESSAGES } from './utils/constants';
 import FileImporter from './components/FileImporter';
-import Timeline from './components/Timeline';
+import TimelineContainer from './components/TimelineContainer';
 import VideoPreview from './components/VideoPreview';
 import ClipEditor from './components/ClipEditor';
 import ExportDialog from './components/ExportDialog';
@@ -206,6 +206,16 @@ function AppContent() {
   };
 
   /**
+   * Handle seeking to a specific time in the timeline
+   * @param {number} time - Time in seconds to seek to
+   */
+  const handleSeekToTime = (time) => {
+    // This will be handled by VideoPreview component
+    // For now, we'll just update the playback time state
+    setCurrentPlaybackTime(time);
+  };
+
+  /**
    * Handle export request
    * @param {string} outputPath - Path where to save the exported video
    */
@@ -262,42 +272,48 @@ function AppContent() {
         <HelpCircle size={20} />
       </button>
 
-      <aside className="timeline-panel">
-        <FileImporter 
-          onImportFiles={handleImportFiles} 
-          isLoading={isImporting} 
-        />
-        <Timeline
-          clips={clips}
-          selectedClipId={selectedClipId}
-          onSelectClip={handleSelectClip}
-          onDeleteClip={handleDeleteClip}
-          onReorderClips={handleReorderClips}
-        />
-      </aside>
+      <div className="main-content">
+        <aside className="media-panel">
+          <FileImporter 
+            onImportFiles={handleImportFiles} 
+            isLoading={isImporting} 
+          />
+        </aside>
 
-      <main className="preview-panel">
-        <VideoPreview
-          clip={clips.find(c => c.id === selectedClipId) || null}
-          onPlaybackChange={setCurrentPlaybackTime}
-        />
-        <ClipEditor
-          clip={clips.find(c => c.id === selectedClipId) || null}
-          onTrimChange={handleTrimChange}
-        />
-        
-        {/* Export Button */}
-        <div className="export-section">
-          <button
-            className="export-button"
-            onClick={() => setShowExportDialog(true)}
-            disabled={clips.length === 0 || isExporting}
-          >
-            <Download size={20} />
-            <span>Export Timeline ({clips.length} clip{clips.length !== 1 ? 's' : ''})</span>
-          </button>
-        </div>
-      </main>
+        <main className="preview-panel">
+          <VideoPreview
+            clip={clips.find(c => c.id === selectedClipId) || null}
+            onPlaybackChange={setCurrentPlaybackTime}
+            seekToTime={currentPlaybackTime}
+          />
+          <ClipEditor
+            clip={clips.find(c => c.id === selectedClipId) || null}
+            onTrimChange={handleTrimChange}
+          />
+          
+          {/* Export Button */}
+          <div className="export-section">
+            <button
+              className="export-button"
+              onClick={() => setShowExportDialog(true)}
+              disabled={clips.length === 0 || isExporting}
+            >
+              <Download size={20} />
+              <span>Export Timeline ({clips.length} clip{clips.length !== 1 ? 's' : ''})</span>
+            </button>
+          </div>
+        </main>
+      </div>
+
+      {/* Horizontal Timeline at Bottom */}
+      <TimelineContainer
+        clips={clips}
+        selectedClipId={selectedClipId}
+        onSelectClip={handleSelectClip}
+        onDeleteClip={handleDeleteClip}
+        playheadPosition={currentPlaybackTime}
+        onSeekToTime={handleSeekToTime}
+      />
 
       {/* Export Dialog */}
       <ExportDialog

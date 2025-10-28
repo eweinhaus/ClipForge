@@ -173,6 +173,31 @@
   transform: scale(0.95);
 }
 
+.clip-drag-handle {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  color: #999;
+  font-size: 12px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  margin-right: 8px;
+}
+
+.clip-drag-handle:hover {
+  color: #666;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.clip-item.dragging .clip-drag-handle {
+  cursor: grabbing;
+}
+
 /* Scrollbar styling */
 .clip-list::-webkit-scrollbar {
   width: 8px;

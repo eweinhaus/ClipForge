@@ -113,8 +113,6 @@ const SortableClipItem = React.memo(({ clip, isSelected, onSelect, onDelete }) =
       ref={setNodeRef}
       style={style}
       className={`clip-item ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
-      {...attributes}
-      {...listeners}
       onClick={onSelect}
       role="button"
       tabIndex={0}
@@ -140,6 +138,15 @@ const SortableClipItem = React.memo(({ clip, isSelected, onSelect, onDelete }) =
           <span className="clip-separator">•</span>
           <span className="clip-resolution">{formatResolution(clip.width, clip.height)}</span>
         </div>
+      </div>
+      <div 
+        className="clip-drag-handle"
+        {...attributes}
+        {...listeners}
+        title="Drag to reorder"
+        aria-label="Drag to reorder clip"
+      >
+        ⋮⋮
       </div>
       <button
         className="clip-delete"

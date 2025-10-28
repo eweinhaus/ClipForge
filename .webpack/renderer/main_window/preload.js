@@ -390,7 +390,7 @@ module.exports = require("events");
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("c93ef210bba2ab8c1845")
+/******/ 		__webpack_require__.h = () => ("6c71ef8e8c84ffb7022b")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/hasOwnProperty shorthand */
@@ -861,6 +861,10 @@ module.exports = require("events");
 /******/ 	(() => {
 /******/ 		__webpack_require__.p = "/";
 /******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/compat */
+/******/ 	
+/******/ 	if (typeof __webpack_require__ !== 'undefined') __webpack_require__.ab = "/Users/ethan/Desktop/Github/Gauntlet/ClipForge/ClipForge/.webpack/renderer" + "/native_modules/";
 /******/ 	
 /******/ 	/* webpack/runtime/jsonp chunk loading */
 /******/ 	(() => {

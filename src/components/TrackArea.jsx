@@ -32,8 +32,8 @@ export default function TrackArea({
           const clipWidth = Math.max(trimmedDuration * pxPerSecond, 20); // Minimum 20px width
           const clipPosition = currentPosition + clipTrimStart * pxPerSecond;
           
-          // Update position for next clip (use full duration for spacing)
-          currentPosition += clipDuration * pxPerSecond;
+          // Update position for next clip (use trimmed duration for spacing)
+          currentPosition += trimmedDuration * pxPerSecond;
 
           return (
             <ClipBlockErrorBoundary key={clip.id} clip={clip}>

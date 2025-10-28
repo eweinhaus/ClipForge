@@ -73,9 +73,10 @@ function AppContent() {
     };
   }, []);
 
-  // Keyboard shortcut for export (Cmd+E)
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Export shortcut (Cmd+E)
       if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
         e.preventDefault();
         if (clips.length > 0) {
@@ -84,11 +85,26 @@ function AppContent() {
           showToast('No clips to export', 'warning');
         }
       }
+      
+      // Space bar for play/pause
+      if (e.code === 'Space') {
+        e.preventDefault();
+        
+        // If no clip is selected, select the first clip and start playback
+        if (!selectedClipId && clips.length > 0) {
+          const firstClip = clips[0];
+          setSelectedClipId(firstClip.id);
+          setShouldAutoPlay(true);
+          showToast(`Playing ${firstClip.fileName}`, 'info');
+        }
+        // If a clip is selected, let VideoPreview handle the space bar
+        // (VideoPreview component will handle the actual play/pause)
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [clips.length, showToast]);
+  }, [clips.length, selectedClipId, showToast]);
 
   /**
    * Handle file imports

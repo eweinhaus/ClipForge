@@ -156,7 +156,7 @@ export default function ClipBlock({
       setHoverCard({
         visible: true,
         x: rect.left + rect.width / 2,
-        y: rect.top - 10
+        y: rect.top - 50 // Position well above the clip
       });
     }
   };
@@ -211,14 +211,17 @@ export default function ClipBlock({
         />
 
         {/* Enhanced thumbnail with lazy loading */}
-        <div className="clip-thumbnail" ref={elementRef}>
-          {isLoaded && cachedSrc ? (
-            <img
-              src={cachedSrc}
-              alt={clip.fileName}
-              className="thumbnail-image"
-            />
-          ) : hasError ? (
+        <div 
+          className="clip-thumbnail" 
+          ref={elementRef}
+          style={isLoaded && cachedSrc ? {
+            backgroundImage: `url(${cachedSrc})`,
+            backgroundSize: 'auto 100%',
+            backgroundRepeat: 'repeat-x',
+            backgroundPosition: 'left center'
+          } : {}}
+        >
+          {isLoaded && cachedSrc ? null : hasError ? (
             <div className="thumbnail-placeholder error">
               <span>📹</span>
             </div>

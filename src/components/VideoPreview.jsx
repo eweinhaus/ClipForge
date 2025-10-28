@@ -220,7 +220,7 @@ const VideoPreview = forwardRef(({ clip, onPlaybackChange, onClipEnded, shouldAu
     setCurrentTime(clampedTime);
   };
 
-  // Keyboard shortcut handler
+  // Keyboard shortcut handler (only when clip is selected)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.code === 'Space' && clip && !hasError) {
@@ -229,8 +229,11 @@ const VideoPreview = forwardRef(({ clip, onPlaybackChange, onClipEnded, shouldAu
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    // Only add listener when clip is selected
+    if (clip) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
   }, [clip, hasError, isPlaying]);
 
   // No clip selected state

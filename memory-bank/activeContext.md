@@ -22,6 +22,14 @@
 
 ## Recent Changes
 
+*   **PR3 Bug Fixes Complete:** Fixed three critical UI issues from PR3
+    *   ✅ Fixed tooltip positioning to appear above clips instead of blocking them
+    *   ✅ Fixed clip spacing so trimming end of clip 1 moves clip 2 to start after clip 1
+    *   ✅ Fixed thumbnail images to show correct width and repeat as needed instead of stretching
+*   **Space Bar Global Playback Fix:** Fixed space bar behavior when no clip is selected
+    *   ✅ Added global space bar handling in App.jsx to select first clip and start playback
+    *   ✅ Updated VideoPreview to only handle space bar when clip is selected
+    *   ✅ Space bar now works from timeline start when no clip is selected
 *   **PR-UI-3 Complete:** Visual Enhancements successfully implemented
     *   ✅ Embedded clip thumbnail previews with lazy loading and caching
     *   ✅ Added filename overlays with contrast-safe colors and ellipsis truncation

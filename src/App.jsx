@@ -5,6 +5,7 @@ import { ERROR_MESSAGES } from './utils/constants';
 import FileImporter from './components/FileImporter';
 import Timeline from './components/Timeline';
 import VideoPreview from './components/VideoPreview';
+import ClipEditor from './components/ClipEditor';
 import Notifications from './components/Notifications';
 import './styles/main.css';
 
@@ -123,6 +124,21 @@ function AppContent() {
     setSelectedClipId(clipId);
   };
 
+  /**
+   * Handle trim changes for a clip
+   * @param {string} clipId - ID of clip to trim
+   * @param {number} trimStart - New trim start time in seconds
+   * @param {number} trimEnd - New trim end time in seconds
+   */
+  const handleTrimChange = (clipId, trimStart, trimEnd) => {
+    setClips(prev => prev.map(clip => 
+      clip.id === clipId 
+        ? { ...clip, trimStart, trimEnd }
+        : clip
+    ));
+    showToast('Clip trimmed', 'success');
+  };
+
   return (
     <div className="app-container">
       <aside className="timeline-panel">
@@ -142,6 +158,10 @@ function AppContent() {
         <VideoPreview
           clip={clips.find(c => c.id === selectedClipId) || null}
           onPlaybackChange={setCurrentPlaybackTime}
+        />
+        <ClipEditor
+          clip={clips.find(c => c.id === selectedClipId) || null}
+          onTrimChange={handleTrimChange}
         />
       </main>
 

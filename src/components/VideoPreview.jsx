@@ -26,7 +26,7 @@ export default function VideoPreview({ clip, onPlaybackChange }) {
 
     // Reset playback state for new clip
     setIsPlaying(false);
-    setCurrentTime(0);
+    setCurrentTime(clip.trimStart || 0);
     setDuration(clip.duration || 0);
     setHasError(false);
     setIsLoading(true);
@@ -50,12 +50,22 @@ export default function VideoPreview({ clip, onPlaybackChange }) {
           videoWidth: video.videoWidth,
           videoHeight: video.videoHeight,
           readyState: video.readyState,
+          trimStart: clip.trimStart,
+          trimEnd: clip.trimEnd,
         });
         handleLoadedMetadata();
       };
 
       video.oncanplay = () => {
-        console.log('[Video] canplay', { src: videoSrc, readyState: video.readyState });
+        // Only seek to trim start if video is ready and we have a trim start > 0
+        if (clip.trimStart > 0 && videoRef.current) {
+          const currentTime = videoRef.current.currentTime;
+          // Only seek if we're not already at the trim start
+          if (Math.abs(currentTime - clip.trimStart) > 0.1) {
+            videoRef.current.currentTime = clip.trimStart;
+            setCurrentTime(clip.trimStart);
+          }
+        }
       };
 
       video.onerror = (e) => {
@@ -85,8 +95,25 @@ export default function VideoPreview({ clip, onPlaybackChange }) {
   };
 
   const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      const newTime = videoRef.current.currentTime;
+    if (videoRef.current && clip) {
+      const video = videoRef.current;
+      let newTime = video.currentTime;
+      
+      // Clamp time within trim range
+      const trimStart = clip.trimStart || 0;
+      const trimEnd = clip.trimEnd || clip.duration || 0;
+      
+      // Only clamp if we're actually outside the trim range
+      if (trimStart > 0 && newTime < trimStart) {
+        newTime = trimStart;
+        video.currentTime = trimStart;
+      } else if (trimEnd < clip.duration && newTime > trimEnd) {
+        newTime = trimEnd;
+        video.currentTime = trimEnd;
+        video.pause(); // Pause when reaching trim end
+        setIsPlaying(false);
+      }
+      
       setCurrentTime(newTime);
       onPlaybackChange?.(newTime);
     }
@@ -116,21 +143,36 @@ export default function VideoPreview({ clip, onPlaybackChange }) {
 
   // Playback controls
   const togglePlayPause = () => {
-    if (!videoRef.current || hasError) return;
+    if (!videoRef.current || hasError) {
+      return;
+    }
 
+    const video = videoRef.current;
+    const trimStart = clip?.trimStart || 0;
+    
     if (isPlaying) {
-      videoRef.current.pause();
+      video.pause();
     } else {
-      videoRef.current.play();
+      // Ensure we're at trim start if needed
+      if (trimStart > 0 && video.currentTime < trimStart) {
+        video.currentTime = trimStart;
+      }
+      video.play();
     }
   };
 
   const handleScrub = (e) => {
-    if (!videoRef.current || hasError) return;
+    if (!videoRef.current || hasError || !clip) return;
     
     const newTime = parseFloat(e.target.value);
-    videoRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
+    const trimStart = clip.trimStart || 0;
+    const trimEnd = clip.trimEnd || clip.duration || 0;
+    
+    // Clamp scrubber value within trim range
+    const clampedTime = Math.max(trimStart, Math.min(trimEnd, newTime));
+    
+    videoRef.current.currentTime = clampedTime;
+    setCurrentTime(clampedTime);
   };
 
   // Keyboard shortcut handler
@@ -239,8 +281,8 @@ export default function VideoPreview({ clip, onPlaybackChange }) {
           <input
             type="range"
             className="scrubber"
-            min="0"
-            max={duration || 0}
+            min={clip?.trimStart || 0}
+            max={clip?.trimEnd || duration || 0}
             value={currentTime}
             onChange={handleScrub}
             step="0.1"
@@ -258,15 +300,15 @@ export default function VideoPreview({ clip, onPlaybackChange }) {
           </span>
         </div>
         <div className="metadata-item">
-          <span className="metadata-label">Resolution:</span>
+          <span className="metadata-label">Res:</span>
           <span className="metadata-value">
             {formatResolution(clip.width, clip.height)}
           </span>
         </div>
         <div className="metadata-item">
-          <span className="metadata-label">Duration:</span>
+          <span className="metadata-label">Dur:</span>
           <span className="metadata-value">
-            {formatDuration(clip.duration)}
+            {formatDuration((clip.trimEnd || clip.duration) - (clip.trimStart || 0))}
           </span>
         </div>
       </div>

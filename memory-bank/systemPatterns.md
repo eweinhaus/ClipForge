@@ -4,7 +4,7 @@
 
 The ClipForge MVP is structured as an Electron desktop application, combining a Node.js backend (main process) with a React frontend (renderer process). Communication between these two processes occurs via Inter-Process Communication (IPC).
 
-**Current Implementation Status:** ✅ PR-1 Complete - Foundation established
+**Current Implementation Status:** ✅ PR-1 through PR-4 Complete - Core functionality implemented
 
 ```
 electron/
@@ -27,7 +27,7 @@ src/
     FileImporter.jsx  ✅ Implemented (PR-2)
     Timeline.jsx      ✅ Implemented (PR-2)
     VideoPreview.jsx  ✅ Implemented (PR-3)
-    ClipEditor.jsx    🔄 Stub (PR-4)
+    ClipEditor.jsx    ✅ Implemented (PR-4)
     ExportDialog.jsx  🔄 Stub (PR-5)
     Notifications.jsx ✅ Implemented (PR-2)
   utils/              ✅ Implemented (uuid, formatters, constants, toastContext)
@@ -108,6 +108,31 @@ ipcMain.handle('read-metadata', async (event, filePath) => {
 });
 // ... other handlers
 ```
+
+## Trim Functionality ✅ IMPLEMENTED (PR-4)
+
+### ClipEditor Component
+- **Location:** `src/components/ClipEditor.jsx`
+- **Purpose:** Allows users to set trim start/end points for selected clips
+- **Features:**
+  - Number inputs for trim start/end (in seconds)
+  - Real-time validation with error messages
+  - Apply/Reset buttons with proper state management
+  - Compact horizontal layout design
+  - Displays original vs trimmed duration
+
+### VideoPreview Integration
+- **Trim-aware Playback:** Video respects trim points during playback
+- **Clamping Logic:** Prevents playback outside trim range
+- **Scrubber Bounds:** Min/max values reflect trim range
+- **Duration Display:** Shows trimmed duration in metadata
+- **Seek Behavior:** Automatically seeks to trim start when clip loads
+
+### State Management
+- **Clip Object:** Enhanced with `trimStart` and `trimEnd` properties
+- **Persistence:** Trim values survive clip switching
+- **Validation:** Comprehensive input validation with user-friendly errors
+- **Error Handling:** Graceful handling of invalid trim ranges
 
 ## Build & Packaging ✅ IMPLEMENTED
 

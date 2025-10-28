@@ -21,8 +21,8 @@
 ### PR-3: Video Preview & Playback (COMPLETED)
 3.  **Video Preview & Playback:** ✅ Successfully implemented comprehensive video preview functionality with HTML5 `<video>` element, play/pause controls, scrubber for seeking, keyboard shortcuts, and metadata display. All acceptance criteria met including smooth playback (30fps+), responsive seeking (< 500ms), and proper error handling. **All manual tests passed successfully.**
 
-### PR-4: Trim Clips
-4.  **Trim Clips (Simple In/Out Points):** Create controls (number inputs) to set trim start and end points for clips. Ensure validation, persistence of trim values, and visual feedback in the preview.
+### PR-4: Trim Clips (COMPLETED)
+4.  **Trim Clips (Simple In/Out Points):** ✅ Successfully implemented comprehensive trim functionality with ClipEditor component featuring number inputs for trim start/end points, validation logic with error handling, Apply/Reset buttons, and integration with VideoPreview to respect trim points during playback. All acceptance criteria met including trim validation, persistence, visual feedback, proper clamping behavior, and compact UI design. **All manual tests passed successfully including edge cases, multiple clips, and error recovery.**
 
 ### PR-5: Export & Polish
 5.  **Export to MP4 (Core Loop Completion):** Implement an export function that stitches all trimmed and ordered clips into a single MP4 file. This includes user selection of output location, a progress bar during export, and robust error handling for issues like disk space or permissions.
@@ -35,9 +35,12 @@
 
 *   **PR-1 Complete:** Solid foundation established
 *   **PR-2 Complete:** Core import and timeline display implemented
+*   **PR-3 Complete:** Video preview and playback functionality implemented
+*   **PR-4 Complete:** Trim clips functionality implemented with comprehensive testing
 *   **App Functional:** Launches successfully in both dev and production modes
 *   **FFmpeg Working:** Successfully bundled and functional
-*   **Architecture Ready:** All core components and IPC handlers for PR-1 and PR-2 in place
+*   **Architecture Ready:** All core components and IPC handlers for PR-1 through PR-4 in place
+*   **UI Polish:** Compact, responsive design with proper error handling
 
 ## Known Issues
 

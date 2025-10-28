@@ -13,6 +13,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     try {
       return files.map(file => {
         try {
+          // Validate file type before processing
+          const fileName = file.name.toLowerCase();
+          const supportedExtensions = ['.mp4', '.mov', '.webm'];
+          const hasValidExtension = supportedExtensions.some(ext => fileName.endsWith(ext));
+          
+          if (!hasValidExtension) {
+            console.warn('[Preload] Unsupported file type:', file.name);
+            return null;
+          }
+          
           return webUtils.getPathForFile(file);
         } catch (err) {
           console.error('[Preload] Error getting path for file:', file.name, err);

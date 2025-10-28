@@ -130,6 +130,11 @@
   color: var(--text-secondary);
 }
 
+.shortcut-description {
+  font-style: italic;
+  opacity: 0.8;
+}
+
 /* About Content */
 .about-content {
   font-size: 14px;

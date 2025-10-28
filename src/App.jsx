@@ -20,6 +20,7 @@ function AppContent() {
   const [selectedClipId, setSelectedClipId] = useState(null);
   const [currentPlaybackTime, setCurrentPlaybackTime] = useState(0);
   const [isImporting, setIsImporting] = useState(false);
+  const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
   
   // Export state
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -32,6 +33,31 @@ function AppContent() {
   const videoPreviewRef = useRef(null);
   
   const { showToast } = useToast();
+
+  /**
+   * Calculate cumulative timeline position for a given clip and time within that clip
+   * @param {string} clipId - ID of the clip
+   * @param {number} timeInClip - Time within the clip
+   * @returns {number} Cumulative timeline position
+   */
+  const calculateTimelinePosition = (clipId, timeInClip) => {
+    const clipIndex = clips.findIndex(clip => clip.id === clipId);
+    if (clipIndex === -1) return 0;
+    
+    let cumulativeTime = 0;
+    
+    // Add duration of all previous clips
+    for (let i = 0; i < clipIndex; i++) {
+      const clip = clips[i];
+      const trimmedDuration = (clip.trimEnd || clip.duration || 0) - (clip.trimStart || 0);
+      cumulativeTime += trimmedDuration;
+    }
+    
+    // Add the current time within the current clip
+    cumulativeTime += timeInClip;
+    
+    return cumulativeTime;
+  };
 
   // Listen for export progress updates
   useEffect(() => {
@@ -208,11 +234,74 @@ function AppContent() {
 
   /**
    * Handle seeking to a specific time in the timeline
-   * @param {number} time - Time in seconds to seek to
+   * @param {number} timelineTime - Time in seconds to seek to on the timeline
    */
-  const handleSeekToTime = (time) => {
-    if (videoPreviewRef.current) {
-      videoPreviewRef.current.seekTo(time);
+  const handleSeekToTime = (timelineTime) => {
+    if (videoPreviewRef.current && clips.length > 0) {
+      let cumulativeTime = 0;
+      
+      // Find which clip contains the target time
+      for (let i = 0; i < clips.length; i++) {
+        const clip = clips[i];
+        const trimmedDuration = (clip.trimEnd || clip.duration || 0) - (clip.trimStart || 0);
+        
+        if (timelineTime <= cumulativeTime + trimmedDuration) {
+          // This clip contains the target time
+          const timeInClip = timelineTime - cumulativeTime;
+          
+          // Switch to this clip if it's not currently selected
+          if (selectedClipId !== clip.id) {
+            setSelectedClipId(clip.id);
+          }
+          
+          // Seek to the time within the clip
+          videoPreviewRef.current.seekTo(timeInClip);
+          return;
+        }
+        
+        cumulativeTime += trimmedDuration;
+      }
+      
+      // If we get here, the time is beyond all clips
+      // Seek to the end of the last clip
+      const lastClip = clips[clips.length - 1];
+      if (selectedClipId !== lastClip.id) {
+        setSelectedClipId(lastClip.id);
+      }
+      videoPreviewRef.current.seekTo(lastClip.trimEnd || lastClip.duration || 0);
+    }
+  };
+
+  /**
+   * Handle clip ending - move to next clip for continuous playback
+   */
+  const handleClipEnded = () => {
+    if (clips.length === 0) return;
+    
+    const currentIndex = clips.findIndex(clip => clip.id === selectedClipId);
+    if (currentIndex === -1) return;
+    
+    // Move to next clip if available
+    const nextIndex = currentIndex + 1;
+    if (nextIndex < clips.length) {
+      const nextClip = clips[nextIndex];
+      setSelectedClipId(nextClip.id);
+      setShouldAutoPlay(true); // Signal to auto-play the next clip
+      
+      // Calculate cumulative timeline position up to the next clip
+      let cumulativeTime = 0;
+      for (let i = 0; i < nextIndex; i++) {
+        const clip = clips[i];
+        const trimmedDuration = (clip.trimEnd || clip.duration || 0) - (clip.trimStart || 0);
+        cumulativeTime += trimmedDuration;
+      }
+      
+      // Add the trim start of the next clip
+      cumulativeTime += (nextClip.trimStart || 0);
+      setCurrentPlaybackTime(cumulativeTime);
+    } else {
+      // No more clips, stop playback
+      setCurrentPlaybackTime(0);
     }
   };
 
@@ -285,7 +374,15 @@ function AppContent() {
           <VideoPreview
             ref={videoPreviewRef}
             clip={clips.find(c => c.id === selectedClipId) || null}
-            onPlaybackChange={setCurrentPlaybackTime}
+            onPlaybackChange={(timeInClip) => {
+              if (selectedClipId) {
+                const timelinePosition = calculateTimelinePosition(selectedClipId, timeInClip);
+                setCurrentPlaybackTime(timelinePosition);
+              }
+            }}
+            onClipEnded={handleClipEnded}
+            shouldAutoPlay={shouldAutoPlay}
+            onAutoPlayStarted={() => setShouldAutoPlay(false)}
           />
           <ClipEditor
             clip={clips.find(c => c.id === selectedClipId) || null}
@@ -314,6 +411,7 @@ function AppContent() {
         onDeleteClip={handleDeleteClip}
         playheadPosition={currentPlaybackTime}
         onSeekToTime={handleSeekToTime}
+        onTrimChange={handleTrimChange}
       />
 
       {/* Export Dialog */}

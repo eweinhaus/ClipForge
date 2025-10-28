@@ -15,19 +15,21 @@ export default function TimelineContainer({
   onSelectClip, 
   onDeleteClip, 
   playheadPosition,
-  onSeekToTime 
+  onSeekToTime,
+  onTrimChange
 }) {
   const [timelineHeight, setTimelineHeight] = useState(200);
   const [isResizing, setIsResizing] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [snapToGrid, setSnapToGrid] = useState(true);
   const containerRef = useRef(null);
   const resizeRef = useRef(null);
 
   // Handle resize functionality
   useEffect(() => {
     const handleMouseMove = (e) => {
-      if (!isResizing) return;
+      if (!isResizing || !containerRef.current) return;
       
       const containerRect = containerRef.current.getBoundingClientRect();
       const newHeight = window.innerHeight - e.clientY;
@@ -98,12 +100,16 @@ export default function TimelineContainer({
         zoomLevel={zoomLevel}
         scrollPosition={scrollPosition}
         onScrollChange={handleScrollChange}
+        snapToGrid={snapToGrid}
+        onTrimChange={onTrimChange}
       />
       <TimelineControls
         zoomLevel={zoomLevel}
         onZoomChange={handleZoomChange}
         scrollPosition={scrollPosition}
         onScrollChange={handleScrollChange}
+        snapToGrid={snapToGrid}
+        onSnapToGridChange={setSnapToGrid}
       />
       <div 
         className="resize-handle"

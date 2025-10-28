@@ -11,7 +11,10 @@ export default function TrackArea({
   selectedClipId, 
   onSelectClip, 
   onDeleteClip, 
-  pxPerSecond 
+  pxPerSecond,
+  zoomLevel,
+  snapToGrid,
+  onTrimChange
 }) {
   let currentPosition = 0;
 
@@ -19,7 +22,8 @@ export default function TrackArea({
     <div className="track-area">
       <div className="track">
         {clips.map((clip) => {
-          const clipWidth = (clip.duration || 0) * pxPerSecond;
+          const trimmedDuration = (clip.trimEnd || clip.duration || 0) - (clip.trimStart || 0);
+          const clipWidth = trimmedDuration * pxPerSecond;
           const clipPosition = currentPosition;
           currentPosition += clipWidth;
 
@@ -32,6 +36,9 @@ export default function TrackArea({
               onDelete={() => onDeleteClip(clip.id)}
               width={clipWidth}
               position={clipPosition}
+              zoomLevel={zoomLevel}
+              snapToGrid={snapToGrid}
+              onTrimChange={onTrimChange}
             />
           );
         })}

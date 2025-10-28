@@ -13,7 +13,8 @@
   overflow: hidden;
 }
 
-.clip-block:hover {
+.clip-block:hover,
+.clip-block.hovered {
   background: #0056b3;
   border-color: #004085;
 }
@@ -22,6 +23,47 @@
   background: #0056b3;
   border-color: #004085;
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.clip-block.dragging {
+  opacity: 0.8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Trim handles */
+.trim-handle {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  cursor: ew-resize;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.trim-handle.visible {
+  opacity: 1;
+}
+
+.trim-handle.left {
+  left: -4px;
+  border-radius: 4px 0 0 4px;
+}
+
+.trim-handle.right {
+  right: -4px;
+  border-radius: 0 4px 4px 0;
+}
+
+.trim-handle:hover {
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+.trim-handle:active {
+  background: #ffffff;
 }
 
 .clip-thumbnail {

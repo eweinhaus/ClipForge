@@ -77,6 +77,32 @@ export default function HelpDialog({ isOpen, onClose }) {
             </div>
           </section>
 
+          {/* Timeline Editing Section */}
+          <section className="help-section">
+            <div className="help-section-header">
+              <Keyboard size={20} />
+              <h3>Timeline Editing</h3>
+            </div>
+            <div className="shortcuts-list">
+              <div className="shortcut-item">
+                <kbd>Drag</kbd> <span className="shortcut-description">clip edges</span>
+                <span>Trim clips (with snap-to-grid)</span>
+              </div>
+              <div className="shortcut-item">
+                <kbd>Click</kbd> <span className="shortcut-description">snap button</span>
+                <span>Toggle snap-to-grid (1s intervals)</span>
+              </div>
+              <div className="shortcut-item">
+                <kbd>Zoom</kbd> <span className="shortcut-description">controls</span>
+                <span>0.25x, 0.5x, 1x, 2x, 4x zoom levels</span>
+              </div>
+              <div className="shortcut-item">
+                <kbd>Hover</kbd> <span className="shortcut-description">clip blocks</span>
+                <span>Show trim handles and tooltips</span>
+              </div>
+            </div>
+          </section>
+
           {/* About Section */}
           <section className="help-section">
             <div className="help-section-header">
@@ -91,6 +117,9 @@ export default function HelpDialog({ isOpen, onClose }) {
                 <li>Import MP4, MOV, WebM videos</li>
                 <li>Preview and trim clips</li>
                 <li>Drag-and-drop reordering</li>
+                <li>Professional timeline editing</li>
+                <li>Snap-to-grid trimming</li>
+                <li>Multi-level zoom (0.25x - 4x)</li>
                 <li>Export to MP4</li>
               </ul>
               <p><strong>System Requirements:</strong></p>

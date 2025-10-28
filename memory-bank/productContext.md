@@ -9,10 +9,21 @@ ClipForge aims to provide a straightforward desktop video editing experience for
 Users should be able to:
 
 1.  **Import Videos:** Easily drag and drop MP4/MOV files or use a file picker.
-2.  **Manage Timeline:** View imported clips in a list, reorder them via drag and drop, and delete unwanted clips.
+2.  **Manage Timeline:** View imported clips in a professional horizontal timeline, reorder them via drag and drop, and delete unwanted clips.
 3.  **Preview & Playback:** Select a clip to preview it with play/pause functionality and a scrubber for seeking.
-4.  **Trim Clips:** Set precise start and end points for video segments using simple text inputs, with the preview reflecting the trimmed section.
+4.  **Trim Clips:** Set precise start and end points for video segments using both drag-to-trim on timeline and simple text inputs, with the preview reflecting the trimmed section.
 5.  **Export:** Combine the trimmed and ordered clips into a single MP4 file, selecting an output location, with a progress bar indicating export status.
+
+## Current Focus: Horizontal Timeline Implementation
+
+**MVP Complete** ✅ - All core functionality working with vertical clip list
+
+**New Timeline Vision** 🎯 - Professional horizontal timeline interface:
+- **Bottom Timeline:** Industry-standard horizontal timeline at bottom of screen
+- **Visual Clips:** Duration-based clip blocks with thumbnails and labels
+- **Professional Features:** Time ruler, playhead, zoom controls, snap-to-grid
+- **Enhanced Editing:** Drag-to-trim edges, visual feedback, keyboard navigation
+- **Familiar UX:** Intuitive for users familiar with video editing software
 
 ## User Experience Goals
 

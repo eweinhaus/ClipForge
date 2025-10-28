@@ -1,0 +1,34 @@
+.time-ruler {
+  height: 40px;
+  position: relative;
+  background: #ffffff;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.time-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #dee2e6;
+}
+
+.time-marker.major {
+  background: #6c757d;
+  height: 100%;
+}
+
+.time-marker.minor {
+  height: 50%;
+  top: 50%;
+}
+
+.time-label {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: 11px;
+  color: #495057;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  white-space: nowrap;
+}

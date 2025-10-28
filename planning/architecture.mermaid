@@ -4,11 +4,20 @@ graph TB
         
         subgraph Components["Components"]
             FI["FileImporter<br/>drag and drop"]
-            TL["Timeline<br/>clip list, reorder"]
+            TL["Timeline<br/>horizontal timeline, reorder"]
             CE["ClipEditor<br/>trim, filters"]
             VP["VideoPreview<br/>HTML5 player"]
             ED["ExportDialog<br/>options, progress"]
             REC["RecordingPanel<br/>screen, webcam"]
+        end
+        
+        subgraph TimelineComponents["Timeline Components"]
+            TC["TimelineContainer<br/>main timeline wrapper"]
+            TH["TimelineHeader<br/>track labels, controls"]
+            TR["TimeRuler<br/>time markers, intervals"]
+            TA["TrackArea<br/>clip blocks, interactions"]
+            PH["Playhead<br/>current position indicator"]
+            TZ["TimelineControls<br/>zoom, scroll, navigation"]
         end
         
         App -->|props| FI
@@ -18,8 +27,15 @@ graph TB
         App -->|props| ED
         App -->|props| REC
         
+        TL -->|contains| TC
+        TC -->|contains| TH
+        TC -->|contains| TR
+        TC -->|contains| TA
+        TC -->|contains| PH
+        TC -->|contains| TZ
+        
         FI -->|onImportFiles| App
-        TL -->|onReorder, onDelete| App
+        TL -->|onReorder, onDelete, onTrim| App
         CE -->|onTrimChange| App
         VP -->|onPlaybackChange| App
         ED -->|onExport| App
@@ -80,6 +96,13 @@ graph TB
     
     style App fill:#4A90E2,stroke:#2E5C8A,color:#fff,font-weight:bold
     style Renderer fill:#E8F4F8,stroke:#4A90E2,stroke-width:2px
+    style TimelineComponents fill:#E8F4F8,stroke:#4A90E2,stroke-width:2px
+    style TC fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style TH fill:#7ED321,stroke:#5BA017,color:#fff
+    style TR fill:#7ED321,stroke:#5BA017,color:#fff
+    style TA fill:#7ED321,stroke:#5BA017,color:#fff
+    style PH fill:#D0021B,stroke:#A00116,color:#fff
+    style TZ fill:#F5A623,stroke:#D18A0A,color:#fff
     style FileMan fill:#F8E8E8,stroke:#E85D5D
     style MediaProc fill:#F8E8E8,stroke:#E85D5D
     style CaptureSvc fill:#F8E8E8,stroke:#E85D5D

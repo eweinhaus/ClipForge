@@ -56,6 +56,7 @@ body {
 /* App container layout */
 .app-container {
   display: flex;
+  flex-direction: column;
   height: 100vh;
   overflow: hidden;
   background: var(--bg-light);
@@ -93,11 +94,19 @@ body {
   transform: scale(0.95);
 }
 
-/* Timeline panel (left side) */
-.timeline-panel {
-  width: 400px;
-  min-width: 300px;
-  max-width: 600px;
+/* Main content area (above timeline) */
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  padding-bottom: 200px; /* Space for timeline */
+}
+
+/* Media panel (left side) */
+.media-panel {
+  width: 300px;
+  min-width: 250px;
+  max-width: 400px;
   border-right: 1px solid var(--border);
   background: var(--bg-white);
   display: flex;
@@ -106,7 +115,7 @@ body {
   flex-shrink: 0;
 }
 
-/* Preview panel (right side) */
+/* Preview panel (center) */
 .preview-panel {
   flex: 1;
   display: flex;
@@ -358,14 +367,18 @@ input[type="number"]:focus {
 
 /* Responsive adjustments */
 @media (max-width: 1200px) {
-  .timeline-panel {
-    width: 350px;
+  .media-panel {
+    width: 250px;
   }
 }
 
 @media (max-width: 900px) {
-  .timeline-panel {
-    width: 300px;
+  .media-panel {
+    width: 200px;
+  }
+  
+  .main-content {
+    padding-bottom: 150px; /* Smaller timeline on mobile */
   }
 }
 

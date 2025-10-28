@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
 import TimelineHeader from './TimelineHeader';
 import TimelineContent from './TimelineContent';
 import TimelineControls from './TimelineControls';
+import { useTimelineKeyboard } from '../hooks/useTimelineKeyboard';
 import './TimelineContainer.css';
 
 /**
@@ -14,46 +14,65 @@ export default function TimelineContainer({
   selectedClipId, 
   onSelectClip, 
   onDeleteClip, 
+  onDuplicateClip,
+  onResetTrim,
   playheadPosition,
-  onSeekToTime 
+  onSeekToTime,
+  onTrimChange,
+  onExport,
+  isExporting
 }) {
-  const [timelineHeight, setTimelineHeight] = useState(200);
-  const [isResizing, setIsResizing] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const containerRef = useRef(null);
-  const resizeRef = useRef(null);
-
-  // Handle resize functionality
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (!isResizing) return;
-      
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const newHeight = window.innerHeight - e.clientY;
-      const clampedHeight = Math.max(150, Math.min(300, newHeight));
-      setTimelineHeight(clampedHeight);
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-    };
-
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+  const timelineHeight = 200; // Fixed height
+  const [zoomLevel, setZoomLevel] = useState(() => {
+    try {
+      const saved = localStorage.getItem('clipforge.timelinePrefs');
+      if (saved) {
+        const prefs = JSON.parse(saved);
+        return prefs.zoomLevel || 1;
+      }
+    } catch (e) {
+      console.warn('Failed to load timeline preferences:', e);
     }
+    return 1;
+  });
+  const [scrollPosition, setScrollPosition] = useState(() => {
+    try {
+      const saved = localStorage.getItem('clipforge.timelinePrefs');
+      if (saved) {
+        const prefs = JSON.parse(saved);
+        return prefs.scrollPosition || 0;
+      }
+    } catch (e) {
+      console.warn('Failed to load timeline preferences:', e);
+    }
+    return 0;
+  });
+  const containerRef = useRef(null);
 
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isResizing]);
+  // Save preferences to localStorage when they change
+  useEffect(() => {
+    try {
+      const prefs = {
+        zoomLevel,
+        scrollPosition
+      };
+      localStorage.setItem('clipforge.timelinePrefs', JSON.stringify(prefs));
+    } catch (e) {
+      console.warn('Failed to save timeline preferences:', e);
+    }
+  }, [zoomLevel, scrollPosition]);
 
-  const handleResizeStart = (e) => {
-    e.preventDefault();
-    setIsResizing(true);
-  };
+  // Keyboard navigation hook
+  useTimelineKeyboard({
+    clips,
+    selectedClipId,
+    onSelectClip,
+    onSeekToTime,
+    playheadPosition,
+    zoomLevel,
+    timelineRef: containerRef
+  });
+
 
   const handleZoomChange = (newZoom) => {
     setZoomLevel(newZoom);
@@ -70,13 +89,6 @@ export default function TimelineContainer({
           <p>No clips yet</p>
           <p className="empty-hint">Import videos to get started!</p>
         </div>
-        <div 
-          className="resize-handle"
-          onMouseDown={handleResizeStart}
-          ref={resizeRef}
-        >
-          <ChevronUp size={16} />
-        </div>
       </div>
     );
   }
@@ -86,6 +98,13 @@ export default function TimelineContainer({
       className="timeline-container"
       ref={containerRef}
       style={{ height: timelineHeight }}
+      tabIndex={0}
+      onMouseEnter={() => {
+        // Focus timeline when mouse enters for keyboard navigation
+        if (containerRef.current) {
+          containerRef.current.focus();
+        }
+      }}
     >
       <TimelineHeader />
       <TimelineContent
@@ -93,25 +112,25 @@ export default function TimelineContainer({
         selectedClipId={selectedClipId}
         onSelectClip={onSelectClip}
         onDeleteClip={onDeleteClip}
+        onDuplicateClip={onDuplicateClip}
+        onResetTrim={onResetTrim}
         playheadPosition={playheadPosition}
         onSeekToTime={onSeekToTime}
         zoomLevel={zoomLevel}
         scrollPosition={scrollPosition}
         onScrollChange={handleScrollChange}
+        onTrimChange={onTrimChange}
       />
       <TimelineControls
         zoomLevel={zoomLevel}
         onZoomChange={handleZoomChange}
         scrollPosition={scrollPosition}
         onScrollChange={handleScrollChange}
+        clips={clips}
+        timelineWidth={800} // TODO: Calculate actual timeline width
+        onExport={onExport}
+        isExporting={isExporting}
       />
-      <div 
-        className="resize-handle"
-        onMouseDown={handleResizeStart}
-        ref={resizeRef}
-      >
-        <ChevronUp size={16} />
-      </div>
     </div>
   );
 }

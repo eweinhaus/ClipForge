@@ -7,7 +7,7 @@ import './VideoPreview.css';
  * VideoPreview Component
  * Displays video player with controls for the selected clip
  */
-const VideoPreview = forwardRef(({ clip, onPlaybackChange }, ref) => {
+const VideoPreview = forwardRef(({ clip, onPlaybackChange, onClipEnded, shouldAutoPlay, onAutoPlayStarted }, ref) => {
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -93,6 +93,27 @@ const VideoPreview = forwardRef(({ clip, onPlaybackChange }, ref) => {
     }
   }, [clip]);
 
+  // Handle auto-play when switching clips for continuous playback
+  useEffect(() => {
+    if (shouldAutoPlay && videoRef.current && clip && !isLoading && !hasError) {
+      const video = videoRef.current;
+      const trimStart = clip.trimStart || 0;
+      
+      // Ensure we're at the trim start
+      if (video.currentTime < trimStart) {
+        video.currentTime = trimStart;
+        setCurrentTime(trimStart);
+      }
+      
+      // Start playing
+      video.play();
+      setIsPlaying(true);
+      
+      // Notify parent that auto-play has started
+      onAutoPlayStarted?.();
+    }
+  }, [shouldAutoPlay, clip, isLoading, hasError, onAutoPlayStarted]);
+
   // Handle video events
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
@@ -119,6 +140,9 @@ const VideoPreview = forwardRef(({ clip, onPlaybackChange }, ref) => {
         video.currentTime = trimEnd;
         video.pause(); // Pause when reaching trim end
         setIsPlaying(false);
+        
+        // Trigger continuous playback to next clip
+        onClipEnded?.();
       }
       
       setCurrentTime(newTime);
@@ -136,6 +160,20 @@ const VideoPreview = forwardRef(({ clip, onPlaybackChange }, ref) => {
 
   const handleEnded = () => {
     setIsPlaying(false);
+    
+    // If we're at the natural end of the video, trigger continuous playback
+    if (clip && videoRef.current) {
+      const trimEnd = clip.trimEnd || clip.duration || 0;
+      const currentTime = videoRef.current.currentTime;
+      
+      // If we're at or past the trim end, trigger next clip
+      if (currentTime >= trimEnd) {
+        onClipEnded?.();
+        return;
+      }
+    }
+    
+    // Otherwise, reset to beginning
     setCurrentTime(0);
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
@@ -182,7 +220,7 @@ const VideoPreview = forwardRef(({ clip, onPlaybackChange }, ref) => {
     setCurrentTime(clampedTime);
   };
 
-  // Keyboard shortcut handler
+  // Keyboard shortcut handler (only when clip is selected)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.code === 'Space' && clip && !hasError) {
@@ -191,8 +229,11 @@ const VideoPreview = forwardRef(({ clip, onPlaybackChange }, ref) => {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    // Only add listener when clip is selected
+    if (clip) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
   }, [clip, hasError, isPlaying]);
 
   // No clip selected state

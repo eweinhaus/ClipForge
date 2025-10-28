@@ -13,11 +13,15 @@ export default function TimelineContent({
   selectedClipId,
   onSelectClip,
   onDeleteClip,
+  onDuplicateClip,
+  onResetTrim,
   playheadPosition,
   onSeekToTime,
   zoomLevel,
   scrollPosition,
-  onScrollChange
+  onScrollChange,
+  snapToGrid,
+  onTrimChange
 }) {
   const pxPerSecond = 50 * zoomLevel; // Base 50px per second at 1x zoom
   const totalDuration = clips.reduce((sum, clip) => sum + (clip.duration || 0), 0);
@@ -41,7 +45,12 @@ export default function TimelineContent({
               selectedClipId={selectedClipId}
               onSelectClip={onSelectClip}
               onDeleteClip={onDeleteClip}
+              onDuplicateClip={onDuplicateClip}
+              onResetTrim={onResetTrim}
               pxPerSecond={pxPerSecond}
+              zoomLevel={zoomLevel}
+              snapToGrid={snapToGrid}
+              onTrimChange={onTrimChange}
             />
             <Playhead
               position={playheadPosition}

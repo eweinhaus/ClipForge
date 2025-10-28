@@ -1,5 +1,6 @@
 import React from 'react';
 import ClipBlock from './ClipBlock';
+import ClipBlockErrorBoundary from './ClipBlockErrorBoundary';
 import './TrackArea.css';
 
 /**
@@ -11,7 +12,12 @@ export default function TrackArea({
   selectedClipId, 
   onSelectClip, 
   onDeleteClip, 
-  pxPerSecond 
+  onDuplicateClip,
+  onResetTrim,
+  pxPerSecond,
+  zoomLevel,
+  snapToGrid,
+  onTrimChange
 }) {
   let currentPosition = 0;
 
@@ -19,20 +25,34 @@ export default function TrackArea({
     <div className="track-area">
       <div className="track">
         {clips.map((clip) => {
-          const clipWidth = (clip.duration || 0) * pxPerSecond;
-          const clipPosition = currentPosition;
-          currentPosition += clipWidth;
+          // Ensure clip has required properties with fallbacks
+          const clipDuration = clip.duration || 0;
+          const clipTrimStart = clip.trimStart || 0;
+          const clipTrimEnd = clip.trimEnd || clipDuration;
+          
+          const trimmedDuration = clipTrimEnd - clipTrimStart;
+          const clipWidth = Math.max(trimmedDuration * pxPerSecond, 20); // Minimum 20px width
+          const clipPosition = currentPosition + clipTrimStart * pxPerSecond;
+          
+          // Update position for next clip (use trimmed duration for spacing)
+          currentPosition += trimmedDuration * pxPerSecond;
 
           return (
-            <ClipBlock
-              key={clip.id}
-              clip={clip}
-              isSelected={clip.id === selectedClipId}
-              onSelect={() => onSelectClip(clip.id)}
-              onDelete={() => onDeleteClip(clip.id)}
-              width={clipWidth}
-              position={clipPosition}
-            />
+            <ClipBlockErrorBoundary key={clip.id} clip={clip}>
+              <ClipBlock
+                clip={clip}
+                isSelected={clip.id === selectedClipId}
+                onSelect={() => onSelectClip(clip.id)}
+                onDelete={() => onDeleteClip(clip.id)}
+                onDuplicate={() => onDuplicateClip(clip.id)}
+                onResetTrim={() => onResetTrim(clip.id)}
+                width={clipWidth}
+                position={clipPosition}
+                zoomLevel={zoomLevel}
+                snapToGrid={snapToGrid}
+                onTrimChange={onTrimChange}
+              />
+            </ClipBlockErrorBoundary>
           );
         })}
       </div>

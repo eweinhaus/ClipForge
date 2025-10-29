@@ -247,8 +247,12 @@ async function compositeTracks(mainPath, overlayPath, outputPath, onProgress) {
         // Scale overlay to 25% size (240x180 for 1080p main)
         '[1]scale=320:240[pip]',
         // Composite overlay in bottom-right corner
-        '[0][pip]overlay=W-w-10:H-h-10'
+        '[0][pip]overlay=W-w-10:H-h-10[vout]',
+        // Mix audio from both tracks (use optional mapping ? to handle missing audio)
+        // If only one track has audio, amix will use just that track
+        '[0:a?][1:a?]amix=inputs=2:duration=longest:dropout_transition=2[aout]'
       ])
+      .outputOptions(['-map', '[vout]', '-map', '[aout]'])
       .outputOptions(['-c:v', 'libx264', '-preset', 'fast', '-crf', '23'])
       .outputOptions(['-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2'])
       .outputOptions(['-r', '30'])

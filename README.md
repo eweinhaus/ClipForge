@@ -8,6 +8,7 @@ ClipForge is a streamlined video editing application that focuses on the core wo
 
 ## ✨ Features
 
+### Core Video Editing
 - **Import Videos**: Drag-and-drop or file picker support for MP4, MOV, and WebM files
 - **Preview & Playback**: Smooth video playback with play/pause controls and scrubbing
 - **Professional Timeline**: Horizontal timeline with visual clip blocks and thumbnails
@@ -18,9 +19,26 @@ ClipForge is a streamlined video editing application that focuses on the core wo
 - **Keyboard Navigation**: Arrow keys for timeline navigation and clip selection
 - **Context Menu**: Right-click clip operations (Duplicate, Reset Trim, Delete)
 - **Export to MP4**: Combine trimmed and ordered clips into a single MP4 file
+
+### Recording Capabilities
+- **Screen Recording**: Capture full screen or specific windows with audio
+- **Webcam Recording**: Record with camera and microphone, auto-assigned to overlay track
+- **Composite Recording**: Screen + webcam picture-in-picture recording
+- **Permission Handling**: Graceful permission request flow for screen and camera access
+
+### Advanced Features
+- **Multi-Track Timeline**: Main and overlay tracks for video compositing
+- **Audio Controls**: Per-clip volume slider (0-100%) and mute toggle
+- **Real-time Preview**: Volume control during playback
+- **Visual Indicators**: Mute icons on timeline clips
+- **Export Audio Sync**: Audio levels and mute settings respected in export
+
+### UI & UX
 - **Keyboard Shortcuts**: Efficient workflow with comprehensive shortcut support
 - **Preference Persistence**: Timeline zoom and scroll position remembered
 - **Error Recovery**: Robust error handling with graceful fallbacks
+- **Accessibility**: Screen reader support and keyboard navigation
+- **Professional Polish**: Icons, animations, and smooth interactions
 
 ---
 
@@ -68,26 +86,35 @@ npm run make
    - Drag video files onto the app window, or
    - Click "Or choose files" to select videos from your file system
 
-2. **Preview & Edit**
+2. **Record Content**
+   - Click "Record Screen" to capture your screen
+   - Click "Record Webcam" to record with your camera
+   - Click "Record Screen + Camera" for picture-in-picture recording
+   - Grant permissions when prompted by macOS
+
+3. **Preview & Edit**
    - Click a clip in the timeline to preview it
    - Use the play/pause button or press Space to control playback
    - Set trim start and end points in the Clip Editor panel or drag clip edges
+   - Adjust volume with the slider or mute with the toggle button
    - Click "Apply" to save trim changes
 
-3. **Timeline Navigation**
+4. **Timeline Navigation**
    - Use arrow keys to navigate: ← → for seeking, ↑ ↓ for clip selection
    - Right-click clips for context menu (Duplicate, Reset Trim, Delete)
    - Use zoom slider for precise editing (0.25x to 4x)
    - Click "Fit to Screen" to auto-zoom all clips
+   - Drag clips between Main and Overlay tracks for compositing
 
-4. **Reorder Clips**
+5. **Reorder Clips**
    - Drag clips horizontally in the timeline to change their order
+   - Drag clips between tracks to change their layer
 
-5. **Export**
+6. **Export**
    - Click "Export Timeline" or press Cmd+E
    - Choose an output location
    - Wait for the export to complete
-   - Your final video will be saved as an MP4 file
+   - Your final video will be saved as an MP4 file with all tracks composited
 
 ### Keyboard Shortcuts
 
@@ -171,11 +198,11 @@ npm run make
 
 ## 🐛 Known Limitations
 
-- **Single-track timeline**: Multi-track editing coming in future releases
-- **H.264 codec only**: Limited codec support in MVP
+- **H.264 codec only**: Limited codec support in current version
 - **No transitions or effects**: Basic cuts only (for now)
 - **macOS only**: Windows and Linux support planned
-- **Timeline width calculation**: Fit-to-screen could be more accurate
+- **Console logs present**: Debug logging in capture service (non-critical)
+- **Test coverage**: Some test failures in development environment
 
 ---
 

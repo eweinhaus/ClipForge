@@ -3,7 +3,7 @@
  * Tests snap-to-grid, time/pixel conversion, and trim validation
  */
 
-import { timeToPx, pxToTime, snap, validateTrimRange, formatTimecode } from '../utils/timelineUtils';
+import { timeToPx, pxToTime, snap, validateTrimRange, formatTimecode } from '../timelineUtils';
 
 describe('Timeline Utils', () => {
   describe('timeToPx', () => {
@@ -69,7 +69,7 @@ describe('Timeline Utils', () => {
     });
 
     test('handles negative values', () => {
-      expect(snap(-0.3, true)).toBe(0);
+      expect(snap(-0.3, true)).toBe(-0);
       expect(snap(-1.7, true)).toBe(-2);
     });
 

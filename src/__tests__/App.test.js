@@ -18,16 +18,16 @@ jest.mock('../components/MultiTrackTimeline', () => {
     return (
       <div data-testid="multi-track-timeline">
         <button onClick={() => onTrackChange('clip1', 'overlay')}>Move to Overlay</button>
-        <button onClick={() => onReorderClips(0, 1)}>Reorder</button>
+        <button onClick={() => onReorderClips([{id: 'clip1', order: 0}, {id: 'clip2', order: 1}])}>Reorder</button>
       </div>
     );
   };
 });
 
 jest.mock('../components/MultiTrackVideoPreview', () => {
-  return React.forwardRef(function MockMultiTrackVideoPreview(props, ref) {
+  return function MockMultiTrackVideoPreview(props) {
     return <div data-testid="video-preview">Video Preview</div>;
-  });
+  };
 });
 
 jest.mock('../components/ClipEditor', () => {

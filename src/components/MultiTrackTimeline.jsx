@@ -298,7 +298,17 @@ export default function MultiTrackTimeline({
   const overlayClips = clips.filter(clip => clip.track === 'overlay');
 
   const pxPerSecond = 50 * zoomLevel;
-  const totalDuration = clips.reduce((sum, clip) => sum + (clip.duration || 0), 0);
+  // Calculate total duration as max of main track (overlay can be shorter/longer)
+  // For multi-track, we use the duration of the longest track as the timeline width
+  const mainTrackDuration = mainClips.reduce((sum, clip) => {
+    const trimmedDuration = (clip.trimEnd || clip.duration || 0) - (clip.trimStart || 0);
+    return sum + trimmedDuration;
+  }, 0);
+  const overlayTrackDuration = overlayClips.reduce((sum, clip) => {
+    const trimmedDuration = (clip.trimEnd || clip.duration || 0) - (clip.trimStart || 0);
+    return sum + trimmedDuration;
+  }, 0);
+  const totalDuration = Math.max(mainTrackDuration, overlayTrackDuration);
   const timelineWidth = totalDuration * pxPerSecond;
 
   if (clips.length === 0) {

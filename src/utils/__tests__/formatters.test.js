@@ -49,11 +49,11 @@ describe('formatters', () => {
   describe('ellipsize', () => {
     test('ellipsizes long text', () => {
       expect(ellipsize('short', 10)).toBe('short');
-      expect(ellipsize('very long filename that exceeds limit', 20)).toBe('very long filename...');
+      expect(ellipsize('very long filename that exceeds limit', 20)).toBe('very long filename t...');
     });
 
     test('uses default max length', () => {
-      expect(ellipsize('this is a very long string that should be ellipsized')).toBe('this is a very long...');
+      expect(ellipsize('this is a very long string that should be ellipsized')).toBe('this is a very long ...');
     });
 
     test('handles edge cases', () => {

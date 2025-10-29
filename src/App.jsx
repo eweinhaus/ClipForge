@@ -393,21 +393,24 @@ function AppContent() {
    * @param {string} clipId - ID of the clip
    */
   const handleMuteToggle = (clipId) => {
-    setClips(prev => prev.map(clip => 
-      clip.id === clipId 
-        ? { 
+    setClips(prev => {
+      const updatedClips = prev.map(clip => {
+        if (clip.id === clipId) {
+          const newMutedState = !clip.audio.isMuted;
+          // Show toast immediately with the new state
+          showToast(newMutedState ? 'Clip muted' : 'Clip unmuted', 'success');
+          return { 
             ...clip, 
             audio: { 
               ...clip.audio, 
-              isMuted: !clip.audio.isMuted 
+              isMuted: newMutedState
             } 
-          }
-        : clip
-    ));
-    const clip = clips.find(c => c.id === clipId);
-    if (clip) {
-      showToast(clip.audio.isMuted ? 'Clip unmuted' : 'Clip muted', 'success');
-    }
+          };
+        }
+        return clip;
+      });
+      return updatedClips;
+    });
   };
 
   /**
@@ -773,9 +776,35 @@ function AppContent() {
         stack: err.stack
       });
       console.log('[App] ============= RECORDING FLOW FAILED =============');
+      
+      // Clean up any streams that may have been created
+      if (result) {
+        console.log('[App] Cleaning up streams after start failure...');
+        if (result.stream) {
+          result.stream.getTracks().forEach(track => track.stop());
+        }
+        if (result.screenStream) {
+          result.screenStream.getTracks().forEach(track => track.stop());
+        }
+        if (result.webcamStream) {
+          result.webcamStream.getTracks().forEach(track => track.stop());
+        }
+        if (result.microphoneStream) {
+          result.microphoneStream.getTracks().forEach(track => track.stop());
+        }
+        if (result.audioStream) {
+          result.audioStream.getTracks().forEach(track => track.stop());
+        }
+        console.log('[App] ✓ Streams cleaned up after start failure');
+      }
+      
       showToast(`Recording failed: ${err.message}`, 'error', 8000);
       setRecordingState('idle');
       setRecordingType(null);
+      setRecordingData(null);
+      setRecordingElapsedTime(0);
+      setWebcamStream(null);
+      setScreenStream(null);
     }
   };
 

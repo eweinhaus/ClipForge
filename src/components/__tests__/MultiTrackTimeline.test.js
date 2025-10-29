@@ -7,17 +7,17 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import MultiTrackTimeline from '../MultiTrackTimeline';
 
 // Mock the hooks and components
-jest.mock('../hooks/useTimelineKeyboard', () => ({
+jest.mock('../../hooks/useTimelineKeyboard', () => ({
   useTimelineKeyboard: jest.fn()
 }));
 
-jest.mock('./TimelineHeader', () => {
+jest.mock('../TimelineHeader', () => {
   return function MockTimelineHeader() {
     return <div data-testid="timeline-header">Timeline Header</div>;
   };
 });
 
-jest.mock('./TimelineControls', () => {
+jest.mock('../TimelineControls', () => {
   return function MockTimelineControls({ onZoomChange, onScrollChange, onExport }) {
     return (
       <div data-testid="timeline-controls">

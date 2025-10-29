@@ -1,12 +1,12 @@
 const path = require('path');
-const ffmpeg = require('fluent-ffmpeg');
-const { getFfmpegBinaryPath, getFfprobeBinaryPath } = require('./utils/ffmpegPath');
+const { getFFmpeg } = require('./utils/ffmpegConfig');
 const fs = require('fs');
 const os = require('os');
 
-// Configure FFmpeg paths
-ffmpeg.setFfmpegPath(getFfmpegBinaryPath());
-ffmpeg.setFfprobePath(getFfprobeBinaryPath());
+// Get configured FFmpeg instance
+console.log('[FileManager] Module loading, getting FFmpeg instance...');
+const ffmpeg = getFFmpeg();
+console.log('[FileManager] FFmpeg instance obtained:', typeof ffmpeg);
 
 /**
  * Error types for consistent error handling
@@ -37,44 +37,127 @@ function timeout(ms) {
  */
 async function extractMetadata(filePath) {
   return new Promise((resolve, reject) => {
+    console.log('[Metadata] ========== Starting metadata extraction ==========');
+    console.log('[Metadata] File path:', filePath);
+    console.log('[Metadata] FFmpeg instance:', typeof ffmpeg);
+    console.log('[Metadata] FFmpeg methods available:', Object.getOwnPropertyNames(ffmpeg).slice(0, 10));
     console.debug('[Metadata] Starting ffprobe for', filePath);
+    
+    // Try using ffprobe with explicit path as a fallback
+    const { getFfprobeBinaryPath } = require('./utils/ffmpegPath');
+    const ffprobePath = getFfprobeBinaryPath();
+    console.log('[Metadata] Using FFprobe path:', ffprobePath);
+    
     ffmpeg.ffprobe(filePath, (err, data) => {
       if (err) {
-        const errorMsg = err.message || '';
+        console.error('[Metadata] FFmpeg ffprobe failed, trying direct spawn fallback...', err.message);
         
-        // Classify the error type based on ffprobe output
-        let errorType = ERROR_TYPES.FFMPEG_ERROR;
-        let userMessage = 'Failed to read video file';
+        // Fallback to direct spawn if fluent-ffmpeg fails
+        const { spawn } = require('child_process');
+        const ffprobeArgs = [
+          '-v', 'quiet',
+          '-print_format', 'json',
+          '-show_format',
+          '-show_streams',
+          filePath
+        ];
         
-        if (errorMsg.includes('moov atom not found') || errorMsg.includes('Invalid data found')) {
-          errorType = ERROR_TYPES.CORRUPT_VIDEO;
-          userMessage = 'Video file is corrupted or incomplete. The file may not have finished uploading/downloading.';
-        } else if (errorMsg.includes('No such file') || errorMsg.includes('does not exist')) {
-          errorType = ERROR_TYPES.FILE_NOT_FOUND;
-          userMessage = 'Video file not found';
-        } else if (errorMsg.includes('Permission denied')) {
-          errorType = ERROR_TYPES.PERMISSION_DENIED;
-          userMessage = 'Permission denied when accessing video file';
-        } else if (errorMsg.includes('not a valid')) {
-          errorType = ERROR_TYPES.INVALID_FORMAT;
-          userMessage = 'Video format not supported';
-        }
+        console.log('[Metadata] Trying direct spawn with args:', ffprobeArgs);
+        const child = spawn(ffprobePath, ffprobeArgs);
         
-        console.error('[Metadata] ffprobe error', {
-          errorType,
-          userMessage,
-          rawMessage: err.message,
-          code: err.code,
-          errno: err.errno,
-          path: err.path,
-          spawnargs: err.spawnargs
+        let stdout = '';
+        let stderr = '';
+        
+        child.stdout.on('data', (data) => {
+          stdout += data.toString();
         });
         
-        const error = new Error(errorType);
-        error.userMessage = userMessage;
-        error.details = errorMsg;
-        error.raw = err;
-        reject(error);
+        child.stderr.on('data', (data) => {
+          stderr += data.toString();
+        });
+        
+        child.on('close', (code) => {
+          if (code === 0) {
+            try {
+              const data = JSON.parse(stdout);
+              console.log('[Metadata] Direct spawn succeeded');
+              
+              // Find video stream
+              const videoStream = data.streams.find(s => s.codec_type === 'video');
+              if (!videoStream) {
+                console.warn('[Metadata] No video stream found in file');
+                const error = new Error(ERROR_TYPES.CORRUPT_VIDEO);
+                error.userMessage = 'No video stream found in file';
+                reject(error);
+                return;
+              }
+              
+              console.debug('[Metadata] Direct spawn ffprobe succeeded, video stream found', {
+                codec: videoStream.codec_name,
+                resolution: `${videoStream.width}x${videoStream.height}`,
+                duration: data.format.duration
+              });
+              
+              resolve({
+                duration: parseFloat(data.format.duration) || 0,
+                width: videoStream.width || 0,
+                height: videoStream.height || 0,
+                codec: videoStream.codec_name || 'unknown',
+                bitrate: parseInt(data.format.bit_rate) || 0,
+              });
+            } catch (parseErr) {
+              console.error('[Metadata] Failed to parse direct spawn output:', parseErr);
+              const error = new Error(ERROR_TYPES.FFMPEG_ERROR);
+              error.userMessage = 'Failed to parse video metadata';
+              error.details = parseErr.message;
+              reject(error);
+            }
+          } else {
+            console.error('[Metadata] Direct spawn also failed with code:', code);
+            console.error('[Metadata] stderr:', stderr);
+            
+            const errorMsg = stderr || err.message || '';
+            let errorType = ERROR_TYPES.FFMPEG_ERROR;
+            let userMessage = 'Failed to read video file';
+            
+            if (errorMsg.includes('moov atom not found') || errorMsg.includes('Invalid data found')) {
+              errorType = ERROR_TYPES.CORRUPT_VIDEO;
+              userMessage = 'Video file is corrupted or incomplete. The file may not have finished uploading/downloading.';
+            } else if (errorMsg.includes('No such file') || errorMsg.includes('does not exist')) {
+              errorType = ERROR_TYPES.FILE_NOT_FOUND;
+              userMessage = 'Video file not found';
+            } else if (errorMsg.includes('Permission denied')) {
+              errorType = ERROR_TYPES.PERMISSION_DENIED;
+              userMessage = 'Permission denied when accessing video file';
+            } else if (errorMsg.includes('not a valid')) {
+              errorType = ERROR_TYPES.INVALID_FORMAT;
+              userMessage = 'Video format not supported';
+            }
+            
+            console.error('[Metadata] Both methods failed', {
+              errorType,
+              userMessage,
+              rawMessage: errorMsg,
+              fluentError: err.message,
+              spawnCode: code
+            });
+            
+            const error = new Error(errorType);
+            error.userMessage = userMessage;
+            error.details = errorMsg;
+            error.raw = err;
+            reject(error);
+          }
+        });
+        
+        child.on('error', (spawnErr) => {
+          console.error('[Metadata] Direct spawn error:', spawnErr);
+          const error = new Error(ERROR_TYPES.FFMPEG_ERROR);
+          error.userMessage = 'Failed to execute FFprobe';
+          error.details = spawnErr.message;
+          reject(error);
+        });
+        
         return;
       }
       

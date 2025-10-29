@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, forwardRef } from 'react';
 import { Trash2 } from 'lucide-react';
 import { formatDuration, ellipsize, formatTrimmedDuration } from '../utils/formatters';
 import { timeToPx, pxToTime, snap, validateTrimRange } from '../utils/timelineUtils';
@@ -11,7 +11,7 @@ import './ClipBlock.css';
  * ClipBlock Component
  * Individual clip block in the horizontal timeline
  */
-export default function ClipBlock({ 
+function ClipBlock({ 
   clip, 
   isSelected, 
   onSelect, 
@@ -22,8 +22,12 @@ export default function ClipBlock({
   position,
   zoomLevel,
   snapToGrid,
-  onTrimChange
-}) {
+  onTrimChange,
+  dragAttributes = {},
+  dragListeners = {},
+  dragStyle = {},
+  isDragging = false
+}, forwardedRef) {
   const [isDraggingEdge, setIsDraggingEdge] = useState(false);
   const [draggingEdge, setDraggingEdge] = useState(null); // 'left' or 'right'
   const [draftTrimStart, setDraftTrimStart] = useState(clip.trimStart);
@@ -37,6 +41,15 @@ export default function ClipBlock({
   const startXRef = useRef(0);
   const originalTrimStartRef = useRef(0);
   const originalTrimEndRef = useRef(0);
+
+  const setCombinedRef = useCallback((node) => {
+    blockRef.current = node;
+    if (typeof forwardedRef === 'function') {
+      forwardedRef(node);
+    } else if (forwardedRef) {
+      forwardedRef.current = node;
+    }
+  }, [forwardedRef]);
   
   // Use thumbnail preloading hook
   const { elementRef, isLoaded, hasError, cachedSrc } = useThumbnailPreload(clip.id, clip.thumbnail);
@@ -210,9 +223,10 @@ export default function ClipBlock({
   return (
     <>
       <div
-        ref={blockRef}
-        className={`clip-block ${isSelected ? 'selected' : ''} ${isDraggingEdge ? 'dragging' : ''} ${isHovered ? 'hovered' : ''}`}
+        ref={setCombinedRef}
+        className={`clip-block ${isSelected ? 'selected' : ''} ${(isDraggingEdge || isDragging) ? 'dragging' : ''} ${isHovered ? 'hovered' : ''}`}
         style={{
+          ...dragStyle,
           width: `${currentWidth}px`,
           left: `${currentPosition}px`,
           minWidth: '20px' // Ensure minimum visibility
@@ -223,6 +237,8 @@ export default function ClipBlock({
         onContextMenu={handleContextMenu}
         role="listitem"
         tabIndex={0}
+        {...dragAttributes}
+        {...dragListeners}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -332,3 +348,5 @@ export default function ClipBlock({
     </>
   );
 }
+
+export default forwardRef(ClipBlock);

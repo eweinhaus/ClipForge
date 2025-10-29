@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useSortable } from '@dnd-kit/sortable';
+import { SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import TimelineHeader from './TimelineHeader';
-import TimelineContent from './TimelineContent';
 import TimelineControls from './TimelineControls';
+import Playhead from './Playhead';
+import ClipBlock from './ClipBlock';
+import ClipBlockErrorBoundary from './ClipBlockErrorBoundary';
 import { useTimelineKeyboard } from '../hooks/useTimelineKeyboard';
 import './MultiTrackTimeline.css';
 
@@ -34,72 +35,33 @@ function SortableClipBlock({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: clip.id });
+  } = useSortable({ id: clip.id, data: { trackId } });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1100 : undefined,
   };
 
   return (
-    <div
+    <ClipBlock
       ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className={`sortable-clip-block ${isDragging ? 'dragging' : ''}`}
-    >
-      <div
-        className={`clip-block ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
-        style={{
-          width: `${width}px`,
-          left: `${position}px`,
-          position: 'absolute',
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect();
-        }}
-      >
-        {/* Clip content - reuse existing ClipBlock structure */}
-        <div className="clip-content">
-          <div className="clip-thumbnail">
-            {clip.thumbnail && (
-              <img 
-                src={clip.thumbnail} 
-                alt={clip.fileName}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            )}
-          </div>
-          <div className="clip-filename-overlay">
-            {clip.fileName}
-          </div>
-          <div className="clip-duration-overlay">
-            {Math.round((clip.trimEnd - clip.trimStart) * 10) / 10}s
-          </div>
-        </div>
-        
-        {/* Trim handles */}
-        <div className="trim-handles">
-          <div 
-            className="trim-handle left"
-            onMouseDown={(e) => {
-              e.stopPropagation();
-              // Handle left trim
-            }}
-          />
-          <div 
-            className="trim-handle right"
-            onMouseDown={(e) => {
-              e.stopPropagation();
-              // Handle right trim
-            }}
-          />
-        </div>
-      </div>
-    </div>
+      clip={clip}
+      isSelected={isSelected}
+      onSelect={onSelect}
+      onDelete={onDelete}
+      onDuplicate={onDuplicate}
+      onResetTrim={onResetTrim}
+      width={width}
+      position={position}
+      zoomLevel={zoomLevel}
+      snapToGrid={snapToGrid}
+      onTrimChange={onTrimChange}
+      dragAttributes={attributes}
+      dragListeners={listeners}
+      dragStyle={style}
+      isDragging={isDragging}
+    />
   );
 }
 
@@ -125,12 +87,14 @@ function Track({
 
   return (
     <div className={`track ${trackId}`}>
-      <div className="track-header">
-        <span className="track-label">{trackName}</span>
-        <span className="track-clip-count">{clips.length} clips</span>
-      </div>
+      {trackName && (
+        <div className="track-header">
+          <span className="track-label">{trackName}</span>
+          <span className="track-clip-count">{clips.length} clips</span>
+        </div>
+      )}
       <div className="track-content">
-        <SortableContext items={clips.map(clip => clip.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext id={trackId} items={clips.map(clip => clip.id)} strategy={rectSortingStrategy}>
           {clips.map((clip) => {
             const clipDuration = clip.duration || 0;
             const clipTrimStart = clip.trimStart || 0;
@@ -143,21 +107,22 @@ function Track({
             currentPosition += trimmedDuration * pxPerSecond;
 
             return (
-              <SortableClipBlock
-                key={clip.id}
-                clip={clip}
-                isSelected={clip.id === selectedClipId}
-                onSelect={() => onSelectClip(clip.id)}
-                onDelete={() => onDeleteClip(clip.id)}
-                onDuplicate={() => onDuplicateClip(clip.id)}
-                onResetTrim={() => onResetTrim(clip.id)}
-                width={clipWidth}
-                position={clipPosition}
-                zoomLevel={zoomLevel}
-                snapToGrid={snapToGrid}
-                onTrimChange={onTrimChange}
-                trackId={trackId}
-              />
+              <ClipBlockErrorBoundary key={clip.id} clip={clip}>
+                <SortableClipBlock
+                  clip={clip}
+                  isSelected={clip.id === selectedClipId}
+                  onSelect={() => onSelectClip(clip.id)}
+                  onDelete={() => onDeleteClip(clip.id)}
+                  onDuplicate={() => onDuplicateClip(clip.id)}
+                  onResetTrim={() => onResetTrim(clip.id)}
+                  width={clipWidth}
+                  position={clipPosition}
+                  zoomLevel={zoomLevel}
+                  snapToGrid={snapToGrid}
+                  onTrimChange={onTrimChange}
+                  trackId={trackId}
+                />
+              </ClipBlockErrorBoundary>
             );
           })}
         </SortableContext>
@@ -214,7 +179,11 @@ export default function MultiTrackTimeline({
 
   // Drag & drop sensors
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 6,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -261,6 +230,10 @@ export default function MultiTrackTimeline({
     const activeId = active.id;
     const overId = over.id;
 
+    if (activeId === overId) {
+      return;
+    }
+
     // Find the active clip
     const activeClip = clips.find(clip => clip.id === activeId);
     if (!activeClip) return;
@@ -286,7 +259,11 @@ export default function MultiTrackTimeline({
       // Same track, handle reordering
       const activeIndex = clips.findIndex(clip => clip.id === activeId);
       const overIndex = clips.findIndex(clip => clip.id === overId);
-      
+
+      if (activeIndex === -1 || overIndex === -1) {
+        return;
+      }
+
       if (activeIndex !== overIndex) {
         onReorderClips(activeIndex, overIndex);
       }
@@ -354,7 +331,7 @@ export default function MultiTrackTimeline({
               <div className="tracks-container">
                 <Track
                   trackId="main-track"
-                  trackName="Main Video"
+                  trackName=""
                   clips={mainClips}
                   selectedClipId={selectedClipId}
                   onSelectClip={onSelectClip}
@@ -384,18 +361,10 @@ export default function MultiTrackTimeline({
               </div>
               
               {/* Playhead */}
-              <div 
-                className="playhead"
-                style={{
-                  left: `${playheadPosition * pxPerSecond}px`,
-                  position: 'absolute',
-                  top: 0,
-                  bottom: 0,
-                  width: '2px',
-                  backgroundColor: '#ff0000',
-                  zIndex: 10,
-                  pointerEvents: 'none'
-                }}
+              <Playhead
+                position={playheadPosition}
+                pxPerSecond={pxPerSecond}
+                onSeekToTime={onSeekToTime}
               />
             </div>
           </div>

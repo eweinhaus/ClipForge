@@ -51,7 +51,7 @@ const RecordingPanel = ({
             className={`recording-button screen-record ${isRecording && recordingType === 'screen' ? 'active' : ''}`}
             onClick={() => onStartRecord('screen')}
             disabled={isRecording}
-            title="Record your screen"
+            title="Record your entire screen or a specific window"
           >
             <Monitor size={20} />
             <span>Record Screen</span>
@@ -87,7 +87,7 @@ const RecordingPanel = ({
             className={`recording-button webcam-record ${isRecording && recordingType === 'webcam' ? 'active' : ''}`}
             onClick={() => onStartRecord('webcam')}
             disabled={isRecording}
-            title="Record from webcam"
+            title="Record from your camera with audio"
           >
             <Camera size={20} />
             <span>Record Webcam</span>
@@ -110,7 +110,7 @@ const RecordingPanel = ({
             className={`recording-button composite-record ${isRecording && recordingType === 'screen+webcam' ? 'active' : ''}`}
             onClick={() => onStartRecord('screen+webcam')}
             disabled={isRecording}
-            title="Record screen + webcam together"
+            title="Record both simultaneously with picture-in-picture"
           >
             <Video size={20} />
             <span>Screen + Camera</span>
@@ -147,25 +147,6 @@ const RecordingPanel = ({
         </div>
       )}
 
-      {/* Instructions */}
-      {isIdle && (
-        <div className="recording-instructions">
-          <p>Choose a recording type to get started:</p>
-          <ul>
-            <li><strong>Screen:</strong> Record your entire screen or a specific window</li>
-            <li><strong>Webcam:</strong> Record from your camera with audio</li>
-            <li><strong>Screen + Camera:</strong> Record both simultaneously with picture-in-picture</li>
-          </ul>
-          <div className="recording-tips">
-            <p><strong>💡 Tips:</strong></p>
-            <ul>
-              <li>Avoid recording ClipForge itself (marked with ⚠️) - this can cause blank screens</li>
-              <li>Try recording other applications or your entire screen instead</li>
-              <li>If you get a blank screen, try a different source</li>
-            </ul>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

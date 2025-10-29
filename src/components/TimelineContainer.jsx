@@ -22,7 +22,7 @@ export default function TimelineContainer({
   onExport,
   isExporting
 }) {
-  const timelineHeight = 200; // Fixed height
+  const timelineHeight = 320; // Fixed height - increased for taller clips
   const [zoomLevel, setZoomLevel] = useState(() => {
     try {
       const saved = localStorage.getItem('clipforge.timelinePrefs');

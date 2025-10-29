@@ -18,11 +18,7 @@ export default function Playhead({ position, pxPerSecond, onSeekToTime }) {
       return;
     }
     
-    console.log('Playhead: Mouse move - dragging', { 
-      clientX: e.clientX, 
-      clientY: e.clientY,
-      isDragging: isDraggingRef.current 
-    });
+    // Debug: Mouse move during drag
     
     const timelineContainer = playheadRef.current.closest('.timeline-track-container');
     if (!timelineContainer) return;
@@ -32,12 +28,7 @@ export default function Playhead({ position, pxPerSecond, onSeekToTime }) {
     const clampedX = Math.max(0, Math.min(currentMouseX, rect.width));
     const timeAtClick = clampedX / pxPerSecond;
     
-    console.log('Playhead: Position update', { 
-      currentMouseX, 
-      clampedX, 
-      timeAtClick,
-      timelineWidth: rect.width 
-    });
+    // Debug: Position update during drag
     
     // Update visual position immediately
     setDragPosition(clampedX);
@@ -48,7 +39,7 @@ export default function Playhead({ position, pxPerSecond, onSeekToTime }) {
 
   // Mouse up handler
   const handleMouseUp = () => {
-    console.log('Playhead: Mouse up - ending drag');
+    // Debug: Mouse up - ending drag
     isDraggingRef.current = false;
     setIsDragging(false);
     setDragPosition(0);
@@ -69,7 +60,7 @@ export default function Playhead({ position, pxPerSecond, onSeekToTime }) {
   const handleMouseDown = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Playhead: Mouse down - starting drag');
+    // Debug: Mouse down - starting drag
     
     // Initialize drag position
     const timelineContainer = playheadRef.current?.closest('.timeline-track-container');

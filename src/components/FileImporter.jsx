@@ -11,6 +11,7 @@ import './FileImporter.css';
 export default function FileImporter({ onImportFiles, isLoading }) {
   const [isDragging, setIsDragging] = useState(false);
   const { showToast } = useToast();
+  const electronAPI = typeof window !== 'undefined' ? window.electronAPI : undefined;
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -30,7 +31,26 @@ export default function FileImporter({ onImportFiles, isLoading }) {
     setIsDragging(false);
 
     const files = Array.from(e.dataTransfer.files);
-    const filePaths = await window.electronAPI.handleDroppedFiles(files);
+    let filePaths = [];
+
+    if (electronAPI?.handleDroppedFiles) {
+      try {
+        filePaths = await electronAPI.handleDroppedFiles(files);
+      } catch (error) {
+        console.error('[FileImporter] handleDroppedFiles failed:', error);
+        showToast('Unable to process dropped files', 'error');
+        return;
+      }
+    } else {
+      filePaths = files
+        .map((file) => file.path)
+        .filter(Boolean);
+
+      if (filePaths.length === 0) {
+        showToast('Drag & drop is only available in the desktop app', 'warning');
+        return;
+      }
+    }
 
     if (filePaths.length > 0) {
       onImportFiles(filePaths);
@@ -39,10 +59,42 @@ export default function FileImporter({ onImportFiles, isLoading }) {
     }
   };
 
-  const handleFileSelect = async () => {
-    const filePaths = await window.electronAPI.selectFile();
-    if (filePaths && filePaths.length > 0) {
-      onImportFiles(filePaths);
+  const handleFileSelect = async (event) => {
+    if (isLoading) {
+      if (event?.preventDefault) event.preventDefault();
+      return;
+    }
+
+    let filePaths = [];
+
+    if (event?.target?.files?.length) {
+      filePaths = Array.from(event.target.files)
+        .map((file) => file.path)
+        .filter(Boolean);
+    }
+
+    if ((!filePaths || filePaths.length === 0) && electronAPI?.selectFile) {
+      try {
+        filePaths = await electronAPI.selectFile();
+      } catch (error) {
+        console.error('[FileImporter] selectFile failed:', error);
+        showToast('Unable to open file picker', 'error');
+        return;
+      }
+    }
+
+    if (!filePaths || filePaths.length === 0) {
+      showToast('No files selected', 'warning');
+      if (event?.target) {
+        event.target.value = '';
+      }
+      return;
+    }
+
+    onImportFiles(filePaths);
+
+    if (event?.target) {
+      event.target.value = '';
     }
   };
 
@@ -75,7 +127,7 @@ export default function FileImporter({ onImportFiles, isLoading }) {
         id="file-input"
         accept={SUPPORTED_MIME_TYPES.join(',')}
         multiple
-        onChange={handleFileSelect} // Removed direct onChange handler
+        onChange={handleFileSelect}
         disabled={isLoading}
         style={{ display: 'none' }}
       />
@@ -83,8 +135,13 @@ export default function FileImporter({ onImportFiles, isLoading }) {
         htmlFor="file-input" 
         className={`file-picker-btn ${isLoading ? 'disabled' : ''}`}
         onClick={(e) => {
-          // Manually trigger file selection via IPC
-          if (!isLoading) {
+          if (isLoading) {
+            e.preventDefault();
+            return;
+          }
+
+          if (electronAPI?.selectFile) {
+            e.preventDefault();
             handleFileSelect();
           }
         }}

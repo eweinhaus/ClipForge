@@ -514,18 +514,11 @@ app.whenReady().then(() => {
 
   // Test FFmpeg availability
   try {
-    const ffmpeg = require('fluent-ffmpeg');
-    const { getFFmpegPath, getFFprobePath } = require('../electron/utils/ffmpegPath');
+    const { getFFmpeg } = require('../electron/utils/ffmpegConfig');
     
-    const ffmpegPath = getFFmpegPath();
-    const ffprobePath = getFFprobePath();
-
-    console.log('[FFmpeg] Resolved binary paths', { ffmpegPath, ffprobePath });
-
-    ffmpeg.setFfmpegPath(ffmpegPath);
-    ffmpeg.setFfprobePath(ffprobePath);
+    const ffmpeg = getFFmpeg();
     
-    console.log('[FFmpeg] Paths configured successfully');
+    console.log('[FFmpeg] FFmpeg configured successfully');
     
     // Quick test
     ffmpeg.getAvailableFormats((err, formats) => {

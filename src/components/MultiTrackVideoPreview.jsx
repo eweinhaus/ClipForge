@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef, useCallback } from 'react';
 import { Play, Pause, Video, AlertTriangle } from 'lucide-react';
 import { formatDuration, formatResolution } from '../utils/formatters';
 import './MultiTrackVideoPreview.css';
@@ -160,7 +160,43 @@ const MultiTrackVideoPreview = forwardRef(({
     }
   }, [shouldAutoPlay, mainClip, isLoading, hasError, onAutoPlayStarted]);
 
-  const handlePlayPause = () => {
+  const handleTimeUpdate = () => {
+    if (mainVideoRef.current) {
+      const time = mainVideoRef.current.currentTime;
+      setCurrentTime(time);
+      
+      // Calculate timeline position and notify parent
+      if (mainClip && onPlaybackChange) {
+        const timelinePosition = calculateTimelinePosition(mainClip, time);
+        onPlaybackChange(timelinePosition);
+      }
+    }
+  };
+
+  // Helper function to calculate timeline position
+  const calculateTimelinePosition = useCallback((clip, timeInClip) => {
+    if (!clips || clips.length === 0) return 0;
+    
+    let cumulativeTime = 0;
+    
+    // Find the clip index
+    const clipIndex = clips.findIndex(c => c.id === clip.id);
+    if (clipIndex === -1) return 0;
+    
+    // Add duration of all previous clips
+    for (let i = 0; i < clipIndex; i++) {
+      const prevClip = clips[i];
+      const trimmedDuration = (prevClip.trimEnd || prevClip.duration || 0) - (prevClip.trimStart || 0);
+      cumulativeTime += trimmedDuration;
+    }
+    
+    // Add the current time within the current clip
+    cumulativeTime += timeInClip;
+    
+    return cumulativeTime;
+  }, [clips]);
+
+  const handlePlayPause = useCallback(() => {
     if (!mainVideoRef.current) return;
 
     if (isPlaying) {
@@ -177,20 +213,50 @@ const MultiTrackVideoPreview = forwardRef(({
       setIsPlaying(true);
     }
     
-    onPlaybackChange(isPlaying);
-  };
-
-  const handleTimeUpdate = () => {
-    if (mainVideoRef.current) {
-      const time = mainVideoRef.current.currentTime;
-      setCurrentTime(time);
+    if (mainClip && onPlaybackChange) {
+      const currentVideoTime = mainVideoRef.current.currentTime || 0;
+      const timelinePosition = calculateTimelinePosition(mainClip, currentVideoTime);
+      onPlaybackChange(timelinePosition);
     }
-  };
+  }, [calculateTimelinePosition, isPlaying, mainClip, onPlaybackChange]);
 
   const handleVideoEnded = () => {
     setIsPlaying(false);
     onClipEnded();
   };
+
+  // Keyboard shortcut for play/pause (Space bar)
+  useEffect(() => {
+    if (!mainClip || hasError) {
+      return;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.code !== 'Space') {
+        return;
+      }
+
+      const activeElement = document.activeElement;
+      const isTyping = activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.isContentEditable
+      );
+
+      if (isTyping) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (!isLoading) {
+        handlePlayPause();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handlePlayPause, hasError, isLoading, mainClip]);
 
   const handleSeek = (e) => {
     if (!mainVideoRef.current) return;

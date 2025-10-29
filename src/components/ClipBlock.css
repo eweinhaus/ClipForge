@@ -2,8 +2,8 @@
   position: absolute;
   top: 0;
   height: 100%;
-  background: #007bff;
-  border: 2px solid transparent;
+  background: linear-gradient(135deg, #ced4da 0%, #dee2e6 100%);
+  border: 1px solid rgba(33, 37, 41, 0.18);
   border-radius: 4px;
   cursor: pointer;
   display: flex;
@@ -15,19 +15,25 @@
 
 .clip-block:hover,
 .clip-block.hovered {
-  background: #0056b3;
-  border-color: #004085;
+  background: linear-gradient(135deg, #dee2e6 0%, #f1f3f5 100%);
+  border-color: rgba(33, 37, 41, 0.35);
+  box-shadow: 0 2px 8px rgba(33, 37, 41, 0.25);
 }
 
 .clip-block.selected {
-  background: #0056b3;
-  border-color: #004085;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
+  border-color: #495057;
+  box-shadow: 0 0 0 2px rgba(73, 80, 87, 0.25);
 }
 
 .clip-block.dragging {
-  opacity: 0.8;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 0.9;
+  box-shadow: 0 6px 16px rgba(33, 37, 41, 0.3);
+}
+
+.clip-block:focus {
+  outline: 2px solid rgba(73, 80, 87, 0.6);
+  outline-offset: 2px;
 }
 
 /* Trim handles */

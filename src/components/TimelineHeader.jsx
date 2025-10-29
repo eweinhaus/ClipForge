@@ -8,9 +8,7 @@ import './TimelineHeader.css';
 export default function TimelineHeader() {
   return (
     <div className="timeline-header">
-      <div className="track-label">
-        <span className="track-name">Video 1</span>
-      </div>
+      {/* Removed VIDEO 1 label to save space */}
     </div>
   );
 }

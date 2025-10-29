@@ -1,12 +1,10 @@
-const ffmpeg = require('fluent-ffmpeg');
-const { getFfmpegBinaryPath, getFfprobeBinaryPath } = require('./utils/ffmpegPath');
+const { getFFmpeg } = require('./utils/ffmpegConfig');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-// Configure FFmpeg path
-ffmpeg.setFfmpegPath(getFfmpegBinaryPath());
-ffmpeg.setFfprobePath(getFfprobeBinaryPath());
+// Get configured FFmpeg instance
+const ffmpeg = getFFmpeg();
 
 /**
  * Build audio filter string for FFmpeg based on clip audio settings

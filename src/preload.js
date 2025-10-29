@@ -40,5 +40,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onExportProgress: (callback) => ipcRenderer.on('export-progress', callback),
   
   // Utility
-  selectSaveLocation: () => ipcRenderer.invoke('select-save-location')
+  selectSaveLocation: () => ipcRenderer.invoke('select-save-location'),
+  
+  // Screen Recording operations
+  getSources: () => ipcRenderer.invoke('get-sources'),
+  startScreenRecord: (sourceId) => ipcRenderer.invoke('start-screen-record', sourceId),
+  startWebcamRecord: () => ipcRenderer.invoke('start-webcam-record'),
+  startCompositeRecord: (screenSourceId) => ipcRenderer.invoke('start-composite-record', screenSourceId),
+  stopScreenRecord: (data) => ipcRenderer.invoke('stop-screen-record', data),
+  stopWebcamRecord: (data) => ipcRenderer.invoke('stop-webcam-record', data),
+  stopCompositeRecord: (data) => ipcRenderer.invoke('stop-composite-record', data),
+  
+  // Permission operations
+  testScreenPermissions: () => ipcRenderer.invoke('test-screen-permissions'),
+  requestScreenPermission: () => ipcRenderer.invoke('request-screen-permission'),
+  
+  // File operations
+  writeRecordingFile: (outputPath, buffer) => ipcRenderer.invoke('write-recording-file', outputPath, buffer),
+  
+  // Utility operations
+  getHomeDir: () => ipcRenderer.invoke('get-home-dir')
 });

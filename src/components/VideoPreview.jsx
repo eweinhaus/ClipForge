@@ -85,6 +85,8 @@ const VideoPreview = forwardRef(({ clip, onPlaybackChange, onClipEnded, shouldAu
           readyState: video.readyState,
         });
         console.error('Video element error:', e);
+        setHasError(true);
+        setIsLoading(false);
       };
 
       video.onstalled = () => console.warn('[Video] stalled', { src: videoSrc });

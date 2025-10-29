@@ -9,6 +9,28 @@ ffmpeg.setFfmpegPath(getFfmpegBinaryPath());
 ffmpeg.setFfprobePath(getFfprobeBinaryPath());
 
 /**
+ * Build audio filter string for FFmpeg based on clip audio settings
+ * @param {Object} clip - Clip object with audio settings
+ * @returns {string} Audio filter string
+ */
+function buildAudioFilter(clip) {
+  const filters = ['asetpts=PTS-STARTPTS']; // Reset PTS to start at 0
+  
+  // Apply volume and mute settings
+  if (clip.audio) {
+    if (clip.audio.isMuted) {
+      filters.push('volume=0'); // Mute the audio
+    } else if (clip.audio.volume !== undefined && clip.audio.volume !== 1.0) {
+      // Apply volume adjustment (clamp between 0 and 1)
+      const volume = Math.min(1, Math.max(0, clip.audio.volume));
+      filters.push(`volume=${volume}`);
+    }
+  }
+  
+  return filters.join(',');
+}
+
+/**
  * Error mapping for user-friendly messages
  */
 const ERROR_MAP = {
@@ -77,8 +99,8 @@ async function extractTrimmedSegment(clip, outputPath, targetResolution, onProgr
         '-vf', 
         `scale=${targetResolution.width}:${targetResolution.height}:force_original_aspect_ratio=decrease,pad=${targetResolution.width}:${targetResolution.height}:(ow-iw)/2:(oh-ih)/2,setpts=PTS-STARTPTS`
       ])
-      // Audio filter: reset PTS to start at 0 and ensure sync
-      .outputOptions(['-af', 'asetpts=PTS-STARTPTS'])
+      // Audio filter: reset PTS to start at 0, apply volume/mute, and ensure sync
+      .outputOptions(['-af', buildAudioFilter(clip)])
       // Video encoding
       .outputOptions(['-c:v', 'libx264', '-preset', 'fast', '-crf', '23'])
       // Audio: use PCM (no encoder delay) to avoid priming/gaps between segments

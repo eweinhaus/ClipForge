@@ -277,6 +277,13 @@ export default function ClipBlock({
           {formatTrimmedDuration(draftTrimStart, draftTrimEnd)}
         </div>
 
+        {/* Mute indicator */}
+        {clip.audio?.isMuted && (
+          <div className="clip-mute-indicator" title="Clip is muted">
+            🔇
+          </div>
+        )}
+
         <button
           className="clip-delete"
           onClick={handleDelete}

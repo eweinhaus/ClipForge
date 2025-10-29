@@ -4,9 +4,9 @@ import './ClipEditor.css';
 
 /**
  * ClipEditor Component
- * Allows users to set trim start/end points for the selected clip
+ * Allows users to set trim start/end points and audio controls for the selected clip
  */
-export default function ClipEditor({ clip, onTrimChange }) {
+export default function ClipEditor({ clip, onTrimChange, onAudioVolumeChange, onMuteToggle }) {
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
   const [validationError, setValidationError] = useState(null);
@@ -177,6 +177,44 @@ export default function ClipEditor({ clip, onTrimChange }) {
           )}
         </div>
       </div>
+
+      {/* Audio Controls */}
+      {clip && (
+        <div className="audio-controls">
+          <div className="audio-controls-header">
+            <h4>Audio Controls</h4>
+          </div>
+          
+          <div className="audio-controls-content">
+            <div className="volume-control">
+              <label htmlFor="volume-slider">
+                Volume: <span className="volume-percentage">{Math.round((clip.audio?.volume || 1) * 100)}%</span>
+              </label>
+              <input
+                id="volume-slider"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={Math.round((clip.audio?.volume || 1) * 100)}
+                onChange={(e) => onAudioVolumeChange?.(clip.id, e.target.value)}
+                disabled={clip.audio?.isMuted || false}
+                className="volume-slider"
+              />
+            </div>
+            
+            <div className="mute-control">
+              <button
+                className={`btn btn-secondary mute-button ${clip.audio?.isMuted ? 'muted' : ''}`}
+                onClick={() => onMuteToggle?.(clip.id)}
+                title={clip.audio?.isMuted ? 'Unmute clip' : 'Mute clip'}
+              >
+                {clip.audio?.isMuted ? '🔇 Unmute' : '🔊 Mute'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

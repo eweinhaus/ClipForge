@@ -158,6 +158,30 @@
   background: rgba(220, 53, 69, 0.8);
 }
 
+/* Mute indicator */
+.clip-mute-indicator {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: white;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0.9;
+}
+
+.clip-block:hover .clip-mute-indicator {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.8);
+}
+
 /* Hover card styles */
 .clip-hover-card {
   position: fixed;

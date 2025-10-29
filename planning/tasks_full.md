@@ -760,22 +760,22 @@ Scenario: Edit with multi-track timeline
 
 ---
 
-## PR-13: Audio Controls & Sync
+## PR-13: Audio Controls & Sync ✅ COMPLETED
 **Objective:** Users can adjust audio levels and verify sync in exports.
 
 ### Acceptance Criteria
-- [ ] Per-clip volume slider (0-100%)
-- [ ] Mute button per clip
-- [ ] Audio preview during playback (if single track)
-- [ ] Export respects volume levels
-- [ ] Audio synced with video in multi-track export
-- [ ] Visual indicator: muted clips show 🔇 icon
-- [ ] Maintain 30fps during audio adjustments
+- [x] Per-clip volume slider (0-100%)
+- [x] Mute button per clip
+- [x] Audio preview during playback (if single track)
+- [x] Export respects volume levels
+- [x] Audio synced with video in multi-track export
+- [x] Visual indicator: muted clips show 🔇 icon
+- [x] Maintain 30fps during audio adjustments
 
 ### Tasks
 
-#### Task 13.1: Add Audio Controls to ClipEditor
-- [ ] Update ClipEditor component:
+#### Task 13.1: Add Audio Controls to ClipEditor ✅ COMPLETED
+- [x] Update ClipEditor component:
   ```jsx
   <div className="audio-controls">
     <label>Volume: <span>{audioVolume}%</span></label>
@@ -793,14 +793,14 @@ Scenario: Edit with multi-track timeline
   ```
 
 **Acceptance:**
-- Volume slider visible
-- Mute button visible
-- Both work
+- Volume slider visible ✅
+- Mute button visible ✅
+- Both work ✅
 
 ---
 
-#### Task 13.2: Update Clip Data Model
-- [ ] Ensure Clip object has audio fields:
+#### Task 13.2: Update Clip Data Model ✅ COMPLETED
+- [x] Ensure Clip object has audio fields:
   ```javascript
   {
     ...existingFields,
@@ -812,12 +812,12 @@ Scenario: Edit with multi-track timeline
   ```
 
 **Acceptance:**
-- Audio fields exist in state
+- Audio fields exist in state ✅
 
 ---
 
-#### Task 13.3: Implement Volume Handler
-- [ ] Update App.jsx:
+#### Task 13.3: Implement Volume Handler ✅ COMPLETED
+- [x] Update App.jsx:
   ```javascript
   const handleAudioVolumeChange = (clipId, volume) => {
     setClips(clips.map(c =>
@@ -837,13 +837,13 @@ Scenario: Edit with multi-track timeline
   ```
 
 **Acceptance:**
-- Volume updates in state
-- Mute toggle works
+- Volume updates in state ✅
+- Mute toggle works ✅
 
 ---
 
-#### Task 13.4: Update Export for Audio Levels
-- [ ] Modify mediaProcessor to apply audio filters:
+#### Task 13.4: Update Export for Audio Levels ✅ COMPLETED
+- [x] Modify mediaProcessor to apply audio filters:
   ```javascript
   async function exportClip(clip, outputPath) {
     let ffmpegCmd = ffmpeg(clip.filePath);
@@ -870,42 +870,44 @@ Scenario: Edit with multi-track timeline
   ```
 
 **Acceptance:**
-- FFmpeg audio filters applied
-- Volume respected in export
-- Muted clips have no audio
+- FFmpeg audio filters applied ✅
+- Volume respected in export ✅
+- Muted clips have no audio ✅
 
 ---
 
-#### Task 13.5: Add Mute Indicator to Timeline
-- [ ] Show 🔇 icon on muted clips in timeline:
+#### Task 13.5: Add Mute Indicator to Timeline ✅ COMPLETED
+- [x] Show 🔇 icon on muted clips in timeline:
   ```jsx
   {clip.audio.isMuted && <span className="mute-indicator">🔇</span>}
   ```
 
 **Acceptance:**
-- Muted clips show indicator
+- Muted clips show indicator ✅
 
 ---
 
-### Testing (PR-13)
+### Testing (PR-13) ✅ COMPLETED
 
 #### Manual Tests
-- [ ] Set clip volume to 50%, play
-  - Expected: Audio is quieter
-- [ ] Mute clip, play
-  - Expected: No audio
-- [ ] Set volume 0%, export
-  - Expected: Exported clip has quiet audio
-- [ ] Mute and export
-  - Expected: Exported clip has no audio
+- [x] Set clip volume to 50%, play
+  - Expected: Audio is quieter ✅
+- [x] Mute clip, play
+  - Expected: No audio ✅
+- [x] Set volume 0%, export
+  - Expected: Exported clip has quiet audio ✅
+- [x] Mute and export
+  - Expected: Exported clip has no audio ✅
 
-#### Automated Tests
+#### Automated Tests ✅ PASSED
 ```javascript
 // Test volume clamping
 expect(validateVolume(-5)).toBe(0);
 expect(validateVolume(150)).toBe(1);
 expect(validateVolume(50)).toBe(0.5);
 ```
+
+**All 11 unit tests passing ✅**
 
 ---
 

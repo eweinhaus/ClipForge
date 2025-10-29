@@ -95,6 +95,18 @@ const VideoPreview = forwardRef(({ clip, onPlaybackChange, onClipEnded, shouldAu
     }
   }, [clip]);
 
+  // Update video volume when clip audio settings change
+  useEffect(() => {
+    if (videoRef.current && clip?.audio) {
+      const video = videoRef.current;
+      if (clip.audio.isMuted) {
+        video.volume = 0;
+      } else {
+        video.volume = clip.audio.volume || 1.0;
+      }
+    }
+  }, [clip?.audio?.volume, clip?.audio?.isMuted]);
+
   // Handle auto-play when switching clips for continuous playback
   useEffect(() => {
     if (shouldAutoPlay && videoRef.current && clip && !isLoading && !hasError) {

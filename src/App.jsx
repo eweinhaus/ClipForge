@@ -3,6 +3,7 @@ import { Download, HelpCircle } from 'lucide-react';
 import { ToastProvider, useToast } from './utils/toastContext';
 import { generateUuid } from './utils/uuid';
 import { ERROR_MESSAGES } from './utils/constants';
+const { migrateClipAudio } = require('./utils/validators');
 import { 
   startScreenRecord, 
   startWebcamRecord, 
@@ -56,6 +57,11 @@ function AppContent() {
   
   const { showToast } = useToast();
 
+  // Migrate clips to new audio structure on component mount
+  useEffect(() => {
+    setClips(prevClips => prevClips.map(migrateClipAudio));
+  }, []);
+
   /**
    * Calculate cumulative timeline position for a given clip and time within that clip
    * @param {string} clipId - ID of the clip
@@ -87,11 +93,15 @@ function AppContent() {
       setExportProgress(progress);
     };
 
-    window.electronAPI.onExportProgress(handleExportProgress);
+    if (window.electronAPI && window.electronAPI.onExportProgress) {
+      window.electronAPI.onExportProgress(handleExportProgress);
+    }
 
     return () => {
       // Cleanup listener when component unmounts
-      window.electronAPI.removeAllListeners('export-progress');
+      if (window.electronAPI && window.electronAPI.removeAllListeners) {
+        window.electronAPI.removeAllListeners('export-progress');
+      }
     };
   }, []);
 
@@ -167,10 +177,15 @@ function AppContent() {
     for (const filePath of filePaths) {
       try {
         // Call IPC to extract metadata
-        const result = await window.electronAPI.readMetadata(filePath);
+        const result = await window.electronAPI?.readMetadata(filePath);
+        
+        // Check if electronAPI is available
+        if (!window.electronAPI) {
+          throw new Error('Electron API not available');
+        }
         
         // Check if metadata extraction succeeded
-        if (!result.success) {
+        if (!result?.success) {
           console.error('[App] Metadata extraction failed:', result.error);
           errorCount++;
           
@@ -195,7 +210,11 @@ function AppContent() {
           trimStart: 0,
           trimEnd: metadata.duration,
           order: clips.length + successCount,
-          track: 'main'
+          track: 'main',
+          audio: {
+            volume: 1.0,
+            isMuted: false
+          }
         };
 
         // Add to clips state
@@ -350,6 +369,48 @@ function AppContent() {
   };
 
   /**
+   * Handle audio volume change for a clip
+   * @param {string} clipId - ID of the clip
+   * @param {number} volume - Volume level (0-100)
+   */
+  const handleAudioVolumeChange = (clipId, volume) => {
+    const normalizedVolume = Math.min(1, Math.max(0, parseFloat(volume) / 100));
+    setClips(prev => prev.map(clip => 
+      clip.id === clipId 
+        ? { 
+            ...clip, 
+            audio: { 
+              ...clip.audio, 
+              volume: normalizedVolume 
+            } 
+          }
+        : clip
+    ));
+  };
+
+  /**
+   * Handle mute toggle for a clip
+   * @param {string} clipId - ID of the clip
+   */
+  const handleMuteToggle = (clipId) => {
+    setClips(prev => prev.map(clip => 
+      clip.id === clipId 
+        ? { 
+            ...clip, 
+            audio: { 
+              ...clip.audio, 
+              isMuted: !clip.audio.isMuted 
+            } 
+          }
+        : clip
+    ));
+    const clip = clips.find(c => c.id === clipId);
+    if (clip) {
+      showToast(clip.audio.isMuted ? 'Clip unmuted' : 'Clip muted', 'success');
+    }
+  };
+
+  /**
    * Handle seeking to a specific time in the timeline
    * @param {number} timelineTime - Time in seconds to seek to on the timeline
    */
@@ -432,12 +493,16 @@ function AppContent() {
     setExportError(null);
 
     try {
-      const result = await window.electronAPI.exportTimeline({
+      const result = await window.electronAPI?.exportTimeline({
         clips,
         outputPath
       });
 
-      if (result.success) {
+      if (!window.electronAPI) {
+        throw new Error('Electron API not available');
+      }
+
+      if (result?.success) {
         showToast(`✓ Video exported successfully to ${outputPath.split('/').pop()}`, 'success', 5000);
         setShowExportDialog(false);
       } else {
@@ -483,7 +548,7 @@ function AppContent() {
       
       // Test permissions first
       console.log('[App] Testing screen permissions...');
-      const permissionResult = await window.electronAPI.testScreenPermissions();
+      const permissionResult = await window.electronAPI?.testScreenPermissions();
       console.log('[App] Permission test result:', permissionResult);
       
       if (!permissionResult.success || !permissionResult.data) {
@@ -504,7 +569,7 @@ function AppContent() {
       // Get available sources for screen recording
       if (type === 'screen' || type === 'screen+webcam') {
         console.log('[App] Getting available screen sources...');
-        const sourcesResult = await window.electronAPI.getSources();
+        const sourcesResult = await window.electronAPI?.getSources();
         console.log('[App] Sources result:', {
           success: sourcesResult.success,
           count: sourcesResult.data?.length || 0
@@ -782,7 +847,7 @@ function AppContent() {
       // Generate output path
       const timestamp = Date.now();
       const fileName = `${recordingType}_${timestamp}.webm`;
-      const homeDirResult = await window.electronAPI.getHomeDir();
+      const homeDirResult = await window.electronAPI?.getHomeDir();
       const homeDir = homeDirResult.success ? homeDirResult.data : '/Users/ethan/Desktop';
       const outputPath = `${homeDir}/Desktop/${fileName}`;
 
@@ -823,8 +888,10 @@ function AppContent() {
         order: clips.length,
         track: recordingType === 'webcam' ? 'overlay' : 'main',
         hasAudio: true,
-        audioVolume: 1.0,
-        isMuted: false
+        audio: {
+          volume: 1.0,
+          isMuted: false
+        }
       };
 
       setClips(prev => [...prev, newClip]);

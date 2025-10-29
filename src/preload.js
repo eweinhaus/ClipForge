@@ -38,6 +38,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Export operations
   exportTimeline: (data) => ipcRenderer.invoke('export-timeline', data),
   onExportProgress: (callback) => ipcRenderer.on('export-progress', callback),
+  removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel),
   
   // Utility
   selectSaveLocation: () => ipcRenderer.invoke('select-save-location'),

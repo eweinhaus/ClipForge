@@ -1,5 +1,7 @@
 import React from 'react';
 import { Video, Camera, Monitor } from 'lucide-react';
+import WebcamPreview from './WebcamPreview';
+import CompositePreview from './CompositePreview';
 import './RecordingPanel.css';
 
 /**
@@ -14,7 +16,11 @@ const RecordingPanel = ({
   selectedSource = null,
   availableSources = [],
   onSourceChange,
-  recordingType = null
+  recordingType = null,
+  webcamStream = null,
+  screenStream = null,
+  micEnabled = true,
+  onMicToggle = () => {}
 }) => {
   // Format elapsed time as MM:SS
   const formatTime = (seconds) => {
@@ -86,6 +92,16 @@ const RecordingPanel = ({
             <Camera size={20} />
             <span>Record Webcam</span>
           </button>
+          
+          {/* Webcam Preview - only show when webcam recording is active or stream is available */}
+          {(recordingType === 'webcam' || webcamStream) && (
+            <WebcamPreview
+              stream={webcamStream}
+              isRecording={isRecording && recordingType === 'webcam'}
+              micEnabled={micEnabled}
+              onMicToggle={onMicToggle}
+            />
+          )}
         </div>
 
         {/* Composite Recording */}
@@ -99,6 +115,16 @@ const RecordingPanel = ({
             <Video size={20} />
             <span>Screen + Camera</span>
           </button>
+          
+          {/* Composite Preview - show when composite recording is active or streams are available */}
+          {(recordingType === 'screen+webcam' || (screenStream && webcamStream)) && (
+            <CompositePreview
+              screenStream={screenStream}
+              webcamStream={webcamStream}
+              recordingState={recordingState}
+              isRecording={isRecording && recordingType === 'screen+webcam'}
+            />
+          )}
         </div>
       </div>
 

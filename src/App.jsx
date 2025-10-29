@@ -48,6 +48,9 @@ function AppContent() {
   const [availableSources, setAvailableSources] = useState([]);
   const [recordingData, setRecordingData] = useState(null);
   const [recordingInterval, setRecordingInterval] = useState(null);
+  const [webcamStream, setWebcamStream] = useState(null);
+  const [screenStream, setScreenStream] = useState(null);
+  const [micEnabled, setMicEnabled] = useState(true);
   
   const videoPreviewRef = useRef(null);
   
@@ -654,6 +657,26 @@ function AppContent() {
       // Store recording data with timeout and chunks
       setRecordingData({ ...result, timeout: recordingTimeout, chunks });
 
+      // Store webcam stream for preview if it's webcam recording
+      if (type === 'webcam' && result.stream) {
+        setWebcamStream(result.stream);
+      }
+      
+      // Store screen stream for preview if it's screen recording
+      if (type === 'screen' && result.stream) {
+        setScreenStream(result.stream);
+      }
+      
+      // Store both streams for preview if it's composite recording
+      if (type === 'screen+webcam') {
+        if (result.screenStream) {
+          setScreenStream(result.screenStream);
+        }
+        if (result.webcamStream) {
+          setWebcamStream(result.webcamStream);
+        }
+      }
+
       // Start elapsed time timer
       const startTime = Date.now();
       const interval = setInterval(() => {
@@ -796,6 +819,8 @@ function AppContent() {
       setRecordingData(null);
       setRecordingElapsedTime(0);
       setSelectedSource(null);
+      setWebcamStream(null);
+      setScreenStream(null);
 
       showToast(`✓ ${recordingType} recording added to timeline`, 'success');
     } catch (err) {
@@ -828,6 +853,8 @@ function AppContent() {
       setRecordingData(null);
       setRecordingElapsedTime(0);
       setSelectedSource(null);
+      setWebcamStream(null);
+      setScreenStream(null);
     }
   };
 
@@ -837,6 +864,21 @@ function AppContent() {
    */
   const handleSourceChange = (source) => {
     setSelectedSource(source);
+  };
+
+  /**
+   * Handle microphone toggle
+   */
+  const handleMicToggle = () => {
+    if (webcamStream) {
+      const audioTracks = webcamStream.getAudioTracks();
+      audioTracks.forEach(track => {
+        track.enabled = !micEnabled;
+        console.log('[App] Audio track enabled:', track.enabled);
+      });
+      setMicEnabled(!micEnabled);
+      showToast(`Microphone ${!micEnabled ? 'enabled' : 'disabled'}`, 'info');
+    }
   };
 
   return (
@@ -866,6 +908,10 @@ function AppContent() {
             availableSources={availableSources}
             onSourceChange={handleSourceChange}
             recordingType={recordingType}
+            webcamStream={webcamStream}
+            screenStream={screenStream}
+            micEnabled={micEnabled}
+            onMicToggle={handleMicToggle}
           />
         </aside>
 

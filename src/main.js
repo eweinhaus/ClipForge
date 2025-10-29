@@ -391,7 +391,7 @@ ipcMain.handle('stop-webcam-record', async (event, { recorder, outputPath, recor
 ipcMain.handle('stop-composite-record', async (event, { recorder, outputPath, recordingData }) => {
   try {
     console.log('[IPC] stop-composite-record request received');
-    const metadata = await captureService.stopRecording(recorder, outputPath, recordingData);
+    const metadata = await captureService.stopCompositeRecording(recorder, outputPath, recordingData);
     console.log('[IPC] Composite recording stopped and saved successfully');
     return { success: true, data: metadata };
   } catch (err) {

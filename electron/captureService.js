@@ -71,10 +71,100 @@ async function requestScreenPermission() {
   }
 }
 
+/**
+ * Start webcam recording
+ * Note: This is a placeholder - actual webcam recording happens in renderer
+ * @returns {Promise<Object>} Recording data with stream and recorder
+ */
+async function startWebcamRecord() {
+  try {
+    // In the main process, we can't directly access getUserMedia
+    // This should be handled in the renderer process
+    console.log('[CaptureService] Webcam recording - handled in renderer');
+    return {
+      success: true,
+      message: 'Webcam recording handled in renderer process'
+    };
+  } catch (error) {
+    console.error('[CaptureService] Webcam recording error:', error);
+    throw new Error(`Failed to start webcam recording: ${error.message}`);
+  }
+}
+
+/**
+ * Stop webcam recording
+ * Note: This is a placeholder - actual stopping happens in renderer
+ * @param {Object} recorder - The MediaRecorder instance
+ * @param {string} outputPath - Path where to save the recording
+ * @returns {Promise<Object>} Metadata about the recorded file
+ */
+async function stopWebcamRecording(recorder, outputPath) {
+  try {
+    // In the main process, we can't directly stop MediaRecorder
+    // This should be handled in the renderer process
+    console.log('[CaptureService] Webcam recording stop - handled in renderer');
+    return {
+      success: true,
+      message: 'Webcam recording stop handled in renderer process'
+    };
+  } catch (error) {
+    console.error('[CaptureService] Webcam recording stop error:', error);
+    throw new Error(`Failed to stop webcam recording: ${error.message}`);
+  }
+}
+
+/**
+ * Start composite recording (screen + webcam)
+ * Note: This is a placeholder - actual composite recording happens in renderer
+ * @param {string} screenSourceId - ID of the screen/window to record
+ * @returns {Promise<Object>} Recording data with stream and recorder
+ */
+async function startCompositeRecord(screenSourceId) {
+  try {
+    // In the main process, we can't directly access getUserMedia or create MediaRecorder
+    // This should be handled in the renderer process
+    console.log('[CaptureService] Composite recording - handled in renderer');
+    return {
+      success: true,
+      message: 'Composite recording handled in renderer process',
+      screenSourceId
+    };
+  } catch (error) {
+    console.error('[CaptureService] Composite recording error:', error);
+    throw new Error(`Failed to start composite recording: ${error.message}`);
+  }
+}
+
+/**
+ * Stop composite recording
+ * Note: This is a placeholder - actual stopping happens in renderer
+ * @param {Object} recorder - The MediaRecorder instance
+ * @param {string} outputPath - Path where to save the recording
+ * @returns {Promise<Object>} Metadata about the recorded file
+ */
+async function stopCompositeRecording(recorder, outputPath) {
+  try {
+    // In the main process, we can't directly stop MediaRecorder
+    // This should be handled in the renderer process
+    console.log('[CaptureService] Composite recording stop - handled in renderer');
+    return {
+      success: true,
+      message: 'Composite recording stop handled in renderer process'
+    };
+  } catch (error) {
+    console.error('[CaptureService] Composite recording stop error:', error);
+    throw new Error(`Failed to stop composite recording: ${error.message}`);
+  }
+}
+
 module.exports = {
   getSources,
   testScreenPermissions,
   requestScreenPermission,
+  startWebcamRecord,
+  stopWebcamRecording,
+  startCompositeRecord,
+  stopCompositeRecording,
   RECORDING_FPS,
   MIN_RESOLUTION,
   IDEAL_RESOLUTION

@@ -1,0 +1,136 @@
+/* WebcamPreview Component Styles */
+
+.webcam-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  margin: 8px 0;
+  transition: all 0.2s ease;
+}
+
+.webcam-preview.recording {
+  border-color: #dc3545;
+  background: #fff5f5;
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.1);
+}
+
+.preview-container {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.preview-video {
+  display: block;
+  width: 320px;
+  height: 240px;
+  background: #000;
+  object-fit: cover;
+}
+
+.recording-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(220, 53, 69, 0.9);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.recording-dot {
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+.preview-controls {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.mic-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: #fff;
+  color: #495057;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mic-toggle:hover {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.mic-toggle.enabled {
+  background: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.mic-toggle.enabled:hover {
+  background: #c3e6cb;
+}
+
+.mic-toggle.disabled {
+  background: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+.mic-toggle.disabled:hover {
+  background: #f5c6cb;
+}
+
+.no-stream-message {
+  text-align: center;
+  color: #6c757d;
+  padding: 20px;
+}
+
+.no-stream-message p {
+  margin: 4px 0;
+}
+
+.no-stream-message .hint {
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .preview-video {
+    width: 280px;
+    height: 210px;
+  }
+  
+  .webcam-preview {
+    padding: 12px;
+  }
+}

@@ -12,9 +12,9 @@ import {
   requestScreenPermission 
 } from './utils/rendererCaptureService';
 import FileImporter from './components/FileImporter';
-import TimelineContainer from './components/TimelineContainer';
+import MultiTrackTimeline from './components/MultiTrackTimeline';
 import TimelineErrorBoundary from './components/TimelineErrorBoundary';
-import VideoPreview from './components/VideoPreview';
+import MultiTrackVideoPreview from './components/MultiTrackVideoPreview';
 import ClipEditor from './components/ClipEditor';
 import ExportDialog from './components/ExportDialog';
 import HelpDialog from './components/HelpDialog';
@@ -333,6 +333,20 @@ function AppContent() {
     
     setClips(newClips);
     showToast('Clip reordered', 'success');
+  };
+
+  /**
+   * Handle track changes for a clip
+   * @param {string} clipId - ID of clip to move
+   * @param {string} newTrack - New track ('main' or 'overlay')
+   */
+  const handleTrackChange = (clipId, newTrack) => {
+    setClips(prev => prev.map(clip => 
+      clip.id === clipId 
+        ? { ...clip, track: newTrack }
+        : clip
+    ));
+    showToast(`Moved to ${newTrack} track`, 'success');
   };
 
   /**
@@ -916,9 +930,11 @@ function AppContent() {
         </aside>
 
         <main className="preview-panel">
-          <VideoPreview
+          <MultiTrackVideoPreview
             ref={videoPreviewRef}
-            clip={clips.find(c => c.id === selectedClipId) || null}
+            clips={clips}
+            selectedClipId={selectedClipId}
+            currentPlaybackTime={currentPlaybackTime}
             onPlaybackChange={(timeInClip) => {
               if (selectedClipId) {
                 const timelinePosition = calculateTimelinePosition(selectedClipId, timeInClip);
@@ -938,7 +954,7 @@ function AppContent() {
 
       {/* Horizontal Timeline at Bottom */}
       <TimelineErrorBoundary>
-        <TimelineContainer
+        <MultiTrackTimeline
           clips={clips}
           selectedClipId={selectedClipId}
           onSelectClip={handleSelectClip}
@@ -948,6 +964,8 @@ function AppContent() {
           playheadPosition={currentPlaybackTime}
           onSeekToTime={handleSeekToTime}
           onTrimChange={handleTrimChange}
+          onTrackChange={handleTrackChange}
+          onReorderClips={handleReorderClips}
           onExport={() => setShowExportDialog(true)}
           isExporting={isExporting}
         />

@@ -182,7 +182,62 @@ function cleanupTempFiles(tempFiles) {
 }
 
 /**
- * Export timeline to MP4
+ * Composite overlay track onto main track using FFmpeg
+ * @param {string} mainPath - Path to main track video
+ * @param {string} overlayPath - Path to overlay track video
+ * @param {string} outputPath - Final output path
+ * @param {Function} onProgress - Progress callback
+ * @returns {Promise<void>}
+ */
+async function compositeTracks(mainPath, overlayPath, outputPath, onProgress) {
+  return new Promise((resolve, reject) => {
+    let lastProgress = 0;
+    
+    console.log('[Export] Compositing overlay onto main track...');
+    
+    ffmpeg()
+      .input(mainPath)
+      .input(overlayPath)
+      .on('start', (cmdLine) => {
+        console.log('[Export] Composite command:', cmdLine);
+        onProgress(0);
+      })
+      .on('stderr', (line) => {
+        console.debug('[Export][composite stderr]', line.trim());
+      })
+      .on('progress', (progress) => {
+        const percent = Math.min(Math.round(progress.percent || 0), 100);
+        if (percent > lastProgress + 2) {
+          lastProgress = percent;
+          onProgress(percent);
+        }
+      })
+      .on('end', () => {
+        console.log('[Export] Compositing complete');
+        onProgress(100);
+        resolve();
+      })
+      .on('error', (err) => {
+        console.error('[Export] Compositing failed:', err.message);
+        reject(err);
+      })
+      .complexFilter([
+        // Scale overlay to 25% size (240x180 for 1080p main)
+        '[1]scale=320:240[pip]',
+        // Composite overlay in bottom-right corner
+        '[0][pip]overlay=W-w-10:H-h-10'
+      ])
+      .outputOptions(['-c:v', 'libx264', '-preset', 'fast', '-crf', '23'])
+      .outputOptions(['-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2'])
+      .outputOptions(['-r', '30'])
+      .outputOptions(['-fflags', '+genpts', '-async', '1'])
+      .output(outputPath)
+      .run();
+  });
+}
+
+/**
+ * Export timeline to MP4 with multi-track support
  * @param {Array} clips - Array of clip objects
  * @param {string} outputPath - Output file path
  * @param {Function} onProgress - Progress callback (0-100)
@@ -193,20 +248,24 @@ async function exportTimeline(clips, outputPath, onProgress = () => {}) {
     throw new Error('INVALID_CLIPS');
   }
 
-  console.log('[Export] ========== Starting timeline export ==========');
+  console.log('[Export] ========== Starting multi-track timeline export ==========');
   console.log('[Export] Clips count:', clips.length);
   console.log('[Export] Output path:', outputPath);
 
-  // Sort clips by order
-  const sortedClips = [...clips].sort((a, b) => a.order - b.order);
-  console.log('[Export] Sorted clips by order:', sortedClips.map(c => ({ name: c.fileName, order: c.order })));
+  // Separate clips by track
+  const mainClips = clips.filter(clip => clip.track === 'main' || !clip.track).sort((a, b) => a.order - b.order);
+  const overlayClips = clips.filter(clip => clip.track === 'overlay').sort((a, b) => a.order - b.order);
+  
+  console.log('[Export] Main track clips:', mainClips.length);
+  console.log('[Export] Overlay track clips:', overlayClips.length);
 
-  // Determine target resolution (use the highest resolution among all clips)
-  const targetResolution = sortedClips.reduce((max, clip) => {
+  // Determine target resolution (use the highest resolution among main track clips)
+  const allMainClips = mainClips.length > 0 ? mainClips : clips;
+  const targetResolution = allMainClips.reduce((max, clip) => {
     const clipPixels = clip.width * clip.height;
     const maxPixels = max.width * max.height;
     return clipPixels > maxPixels ? { width: clip.width, height: clip.height } : max;
-  }, { width: sortedClips[0].width, height: sortedClips[0].height });
+  }, { width: allMainClips[0].width, height: allMainClips[0].height });
   
   console.log('[Export] Target resolution:', targetResolution);
 
@@ -222,57 +281,112 @@ async function exportTimeline(clips, outputPath, onProgress = () => {}) {
       throw new Error('EACCES');
     }
 
-    // Step 1: Extract trimmed segments
-    console.log('[Export] Step 1: Extracting trimmed segments...');
+    // Step 1: Process main track clips
+    console.log('[Export] Step 1: Processing main track...');
     onProgress(5);
-    const segmentPaths = [];
+    let mainTrackPath = null;
     
-    for (let i = 0; i < sortedClips.length; i++) {
-      const clip = sortedClips[i];
-      const segmentPath = path.join(tempDir, `segment_${i}_${Date.now()}.mkv`);
-      tempFiles.push(segmentPath);
+    if (mainClips.length > 0) {
+      const mainSegmentPaths = [];
       
-      console.log(`[Export] Processing clip ${i + 1}/${sortedClips.length}: ${clip.fileName}`);
+      for (let i = 0; i < mainClips.length; i++) {
+        const clip = mainClips[i];
+        const segmentPath = path.join(tempDir, `main_segment_${i}_${Date.now()}.mkv`);
+        tempFiles.push(segmentPath);
+        
+        console.log(`[Export] Processing main clip ${i + 1}/${mainClips.length}: ${clip.fileName}`);
+        
+        const segmentStartProgress = 5 + (30 * i / mainClips.length);
+        const segmentEndProgress = 5 + (30 * (i + 1) / mainClips.length);
+        
+        await Promise.race([
+          extractTrimmedSegment(clip, segmentPath, targetResolution, (segmentPercent) => {
+            const mappedProgress = segmentStartProgress + (segmentPercent * (segmentEndProgress - segmentStartProgress) / 100);
+            onProgress(Math.round(mappedProgress));
+          }),
+          timeout(60000)
+        ]);
+        
+        mainSegmentPaths.push(segmentPath);
+        onProgress(Math.round(segmentEndProgress));
+      }
       
-      // Calculate progress range for this segment
-      const segmentStartProgress = 5 + (50 * i / sortedClips.length);
-      const segmentEndProgress = 5 + (50 * (i + 1) / sortedClips.length);
+      // Concatenate main track segments
+      mainTrackPath = path.join(tempDir, `main_track_${Date.now()}.mp4`);
+      tempFiles.push(mainTrackPath);
       
       await Promise.race([
-        extractTrimmedSegment(clip, segmentPath, targetResolution, (segmentPercent) => {
-          // Map segment progress to overall progress
-          const mappedProgress = segmentStartProgress + (segmentPercent * (segmentEndProgress - segmentStartProgress) / 100);
+        concatenateSegments(mainSegmentPaths, mainTrackPath, (percent) => {
+          const mappedProgress = 35 + (percent * 0.15); // 35-50%
           onProgress(Math.round(mappedProgress));
         }),
-        timeout(60000) // 60 second timeout per segment
+        timeout(300000)
       ]);
-      
-      segmentPaths.push(segmentPath);
-      
-      // Ensure we reach the end of this segment's progress range
-      onProgress(Math.round(segmentEndProgress));
     }
-
-    // Step 2: Concatenate segments using filter_complex
-    console.log('[Export] Step 2: Concatenating segments...');
-    onProgress(55);
-    await Promise.race([
-      concatenateSegments(segmentPaths, outputPath, (percent) => {
-        // Map 0-100% to 55-90% (35% range for better granularity)
-        const mappedProgress = Math.min(55 + (percent * 0.35), 90);
-        onProgress(Math.round(mappedProgress));
-      }),
-      timeout(300000) // 5 minute timeout for concatenation
-    ]);
-
-    // Step 3: Finalization
+    
+    // Step 2: Process overlay track clips
+    console.log('[Export] Step 2: Processing overlay track...');
+    onProgress(50);
+    let overlayTrackPath = null;
+    
+    if (overlayClips.length > 0) {
+      const overlaySegmentPaths = [];
+      
+      for (let i = 0; i < overlayClips.length; i++) {
+        const clip = overlayClips[i];
+        const segmentPath = path.join(tempDir, `overlay_segment_${i}_${Date.now()}.mkv`);
+        tempFiles.push(segmentPath);
+        
+        console.log(`[Export] Processing overlay clip ${i + 1}/${overlayClips.length}: ${clip.fileName}`);
+        
+        const segmentStartProgress = 50 + (20 * i / overlayClips.length);
+        const segmentEndProgress = 50 + (20 * (i + 1) / overlayClips.length);
+        
+        await Promise.race([
+          extractTrimmedSegment(clip, segmentPath, targetResolution, (segmentPercent) => {
+            const mappedProgress = segmentStartProgress + (segmentPercent * (segmentEndProgress - segmentStartProgress) / 100);
+            onProgress(Math.round(mappedProgress));
+          }),
+          timeout(60000)
+        ]);
+        
+        overlaySegmentPaths.push(segmentPath);
+        onProgress(Math.round(segmentEndProgress));
+      }
+      
+      // Concatenate overlay track segments
+      overlayTrackPath = path.join(tempDir, `overlay_track_${Date.now()}.mp4`);
+      tempFiles.push(overlayTrackPath);
+      
+      await Promise.race([
+        concatenateSegments(overlaySegmentPaths, overlayTrackPath, (percent) => {
+          const mappedProgress = 70 + (percent * 0.15); // 70-85%
+          onProgress(Math.round(mappedProgress));
+        }),
+        timeout(300000)
+      ]);
+    }
+    
+    // Step 3: Composite tracks or copy main track
     console.log('[Export] Step 3: Finalizing export...');
-    onProgress(90);
+    onProgress(85);
     
-    // Simulate finalization work with a small delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    onProgress(100);
+    if (overlayTrackPath && mainTrackPath) {
+      // Composite overlay onto main
+      await Promise.race([
+        compositeTracks(mainTrackPath, overlayTrackPath, outputPath, (percent) => {
+          const mappedProgress = 85 + (percent * 0.15); // 85-100%
+          onProgress(Math.round(mappedProgress));
+        }),
+        timeout(300000)
+      ]);
+    } else if (mainTrackPath) {
+      // Just copy main track to output
+      fs.copyFileSync(mainTrackPath, outputPath);
+      onProgress(100);
+    } else {
+      throw new Error('INVALID_CLIPS');
+    }
     console.log('[Export] ========== Export completed successfully ==========');
     console.log('[Export] Final output:', outputPath);
     

@@ -30,7 +30,7 @@ export default function TrackArea({
         height: `${trackConfig.height}px`,
         backgroundColor: trackId === 'audio' ? '#f0fff4' : 'transparent',
         minHeight: `${trackConfig.height}px`, // Ensure minimum height
-        flex: 1 // Take remaining space in track-row
+        width: '100%' // Fill the track-content container
       }}
       data-track-id={trackId}
     >

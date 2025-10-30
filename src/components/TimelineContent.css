@@ -35,6 +35,7 @@
 .timeline-track-container {
   position: relative;
   flex: 1;
+  min-width: 100%;
 }
 
 .track-area-wrapper {
@@ -58,6 +59,11 @@
   border-right: 1px solid #e9ecef;
   background: #ffffff;
   flex-shrink: 0;
+}
+
+.track-content {
+  position: relative;
+  flex: 1;
 }
 
 .track-name {

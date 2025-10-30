@@ -1,7 +1,6 @@
 .playhead {
   position: absolute;
   top: 40px; /* Start after the time ruler */
-  left: 120px; /* Start after track labels */
   bottom: 0; /* Extend to bottom of all tracks */
   width: 2px;
   cursor: pointer;

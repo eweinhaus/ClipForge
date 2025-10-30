@@ -136,14 +136,13 @@ async function startScreenRecord(sourceId) {
     try {
       audioStream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 48000,        // Higher sample rate for better quality
-          channelCount: 2,          // Stereo audio
-          volume: 1.0,              // Full volume
-          latency: 0.01,            // Low latency
-          sampleSize: 16            // 16-bit samples
+          echoCancellation: false,    // Disable to reduce artifacts
+          noiseSuppression: true,     // Enable to reduce fan noise
+          autoGainControl: true,      // Enable to stabilize audio levels
+          sampleRate: 48000,          // Professional sample rate (48 kHz)
+          channelCount: 2,            // Stereo for better audio quality
+          volume: 1.0,                // Full volume for maximum quality
+          latency: 0.05               // Lower latency for better responsiveness
         }
       });
       console.log('[RendererCaptureService] ✓ Microphone audio obtained');
@@ -188,7 +187,7 @@ async function startScreenRecord(sourceId) {
       const recorder = new MediaRecorder(screenStream, {
         mimeType,
         videoBitsPerSecond: 2500000, // 2.5 Mbps for good quality
-        audioBitsPerSecond: 128000   // 128 kbps for high-quality audio
+        audioBitsPerSecond: 96000    // 96 kbps for clean audio (like QuickTime)
       });
 
       console.log('[RendererCaptureService] ✓ MediaRecorder created successfully');
@@ -305,8 +304,8 @@ async function startWebcamRecord() {
     
     const recorder = new MediaRecorder(webcamStream, {
       mimeType,
-      videoBitsPerSecond: 2500000, // 2.5 Mbps
-      audioBitsPerSecond: 128000   // 128 kbps for high-quality audio
+      videoBitsPerSecond: 4000000, // 4 Mbps for better video quality
+      audioBitsPerSecond: 256000   // 256 kbps for high-quality audio
     });
 
     console.log('[RendererCaptureService] ✓ MediaRecorder created for webcam');
@@ -415,14 +414,13 @@ async function startCompositeRecord(screenSourceId, pipSettings = {}) {
           frameRate: { ideal: 30 }
         },
         audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 48000,        // Higher sample rate for better quality
-          channelCount: 2,          // Stereo audio
-          volume: 1.0,              // Full volume
-          latency: 0.01,            // Low latency
-          sampleSize: 16            // 16-bit samples
+          echoCancellation: false,    // Disable to reduce artifacts
+          noiseSuppression: true,     // Enable to reduce fan noise
+          autoGainControl: true,      // Enable to stabilize audio levels
+          sampleRate: 48000,          // Professional sample rate (48 kHz)
+          channelCount: 2,            // Stereo for better audio quality
+          volume: 1.0,                // Full volume for maximum quality
+          latency: 0.05               // Lower latency for better responsiveness
         }
       });
       console.log('[RendererCaptureService] *** getUserMedia() RETURNED for webcam ***');
@@ -440,14 +438,13 @@ async function startCompositeRecord(screenSourceId, pipSettings = {}) {
     try {
       microphoneStream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 48000,        // Higher sample rate for better quality
-          channelCount: 2,          // Stereo audio
-          volume: 1.0,              // Full volume
-          latency: 0.01,            // Low latency
-          sampleSize: 16            // 16-bit samples
+          echoCancellation: false,    // Disable to reduce artifacts
+          noiseSuppression: true,     // Enable to reduce fan noise
+          autoGainControl: true,      // Enable to stabilize audio levels
+          sampleRate: 44100,          // Standard sample rate (like QuickTime)
+          channelCount: 1,            // Mono to reduce processing overhead
+          volume: 0.8,                // Slightly lower volume to reduce fan pickup
+          latency: 0.1                // Higher latency for stability
         }
       });
       console.log('[RendererCaptureService] ✓ Microphone audio obtained');
@@ -517,8 +514,8 @@ async function startCompositeRecord(screenSourceId, pipSettings = {}) {
     
     const recorder = new MediaRecorder(compositeStream, {
       mimeType,
-      videoBitsPerSecond: 2500000, // 2.5 Mbps
-      audioBitsPerSecond: 128000   // 128 kbps for high-quality audio
+      videoBitsPerSecond: 4000000, // 4 Mbps for better video quality
+      audioBitsPerSecond: 256000   // 256 kbps for high-quality audio
     });
 
     console.log('[RendererCaptureService] ✓ Composite MediaRecorder created');

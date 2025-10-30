@@ -2,6 +2,7 @@
   position: relative;
   border-bottom: 1px solid #e9ecef;
   flex-shrink: 0; /* Prevent tracks from shrinking */
+  min-width: 100%; /* Stretch to fill available width */
 }
 
 .track-area:last-child {

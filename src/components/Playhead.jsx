@@ -89,7 +89,7 @@ export default function Playhead({ position, pxPerSecond, onSeekToTime }) {
     <div
       ref={playheadRef}
       className={`playhead ${isDragging ? 'dragging' : ''}`}
-      style={{ left: `${playheadPosition}px` }}
+      style={{ left: `${LABEL_WIDTH + playheadPosition}px` }}
       onClick={handleClick}
     >
       <div className="playhead-line"></div>

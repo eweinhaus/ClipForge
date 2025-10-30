@@ -14,6 +14,7 @@ const ExportDialog = ({
   const [outputPath, setOutputPath] = useState('');
   const [resolution, setResolution] = useState('source');
   const [quality, setQuality] = useState('high');
+  const [audioQuality, setAudioQuality] = useState('high');
   const [showFilePicker, setShowFilePicker] = useState(false);
   const [validationWarning, setValidationWarning] = useState('');
 
@@ -23,6 +24,7 @@ const ExportDialog = ({
       setOutputPath('');
       setResolution('source');
       setQuality('high');
+      setAudioQuality('high');
       setShowFilePicker(false);
       setValidationWarning('');
     }
@@ -102,7 +104,7 @@ const ExportDialog = ({
       return;
     }
 
-    onExport(outputPath, { resolution, quality });
+    onExport(outputPath, { resolution, quality, audioQuality });
   };
 
   const handleCancel = () => {
@@ -178,8 +180,12 @@ const ExportDialog = ({
                 <span className="stat-value">{resolution === 'source' ? 'Source' : resolution}</span>
               </div>
               <div className="stat">
-                <span className="stat-label">Quality:</span>
+                <span className="stat-label">Video Quality:</span>
                 <span className="stat-value">{quality.charAt(0).toUpperCase() + quality.slice(1)}</span>
+              </div>
+              <div className="stat">
+                <span className="stat-label">Audio Quality:</span>
+                <span className="stat-value">{audioQuality.charAt(0).toUpperCase() + audioQuality.slice(1)}</span>
               </div>
             </div>
           </div>
@@ -225,7 +231,7 @@ const ExportDialog = ({
                 </select>
               </div>
               <div className="option-group">
-                <label className="option-label">Quality</label>
+                <label className="option-label">Video Quality</label>
                 <select
                   value={quality}
                   onChange={(e) => setQuality(e.target.value)}
@@ -235,6 +241,19 @@ const ExportDialog = ({
                   <option value="high">High</option>
                   <option value="medium">Medium</option>
                   <option value="low">Low</option>
+                </select>
+              </div>
+              <div className="option-group">
+                <label className="option-label">Audio Quality</label>
+                <select
+                  value={audioQuality}
+                  onChange={(e) => setAudioQuality(e.target.value)}
+                  className="audio-quality-select"
+                  disabled={isExporting}
+                >
+                  <option value="high">High (320 kbps)</option>
+                  <option value="medium">Medium (192 kbps)</option>
+                  <option value="low">Low (128 kbps)</option>
                 </select>
               </div>
             </div>

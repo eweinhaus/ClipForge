@@ -170,7 +170,7 @@ async function concatenateSegments(segmentPaths, outputPath, bitrateSettings, on
         '-maxrate', `${bitrateSettings.maxRate}k`,
         '-bufsize', `${bitrateSettings.bufferSize}k`
       ])
-      .outputOptions(['-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2'])
+      .outputOptions(['-c:a', 'aac', '-b:a', `${bitrateSettings.audioBitrate}k`, '-ar', '48000', '-ac', '2', '-aac_coder', 'twoloop'])
       .outputOptions(['-r', '30'])
       // Ensure proper timing and avoid any PTS issues
       .outputOptions(['-fflags', '+genpts', '-async', '1'])
@@ -217,7 +217,7 @@ function getResolutionDimensions(resolution) {
  * @param {string} quality - Quality preset ('high', 'medium', 'low')
  * @returns {Object} Bitrate settings {videoBitrate, maxRate, bufferSize}
  */
-function getBitrateSettings(resolution, quality) {
+function getBitrateSettings(resolution, quality, audioQuality = 'high') {
   const qualityMultipliers = {
     high: 1.0,
     medium: 0.7,
@@ -236,10 +236,18 @@ function getBitrateSettings(resolution, quality) {
   
   const base = baseBitrates[resolution] || baseBitrates['source'];
   
+  // Audio bitrate settings
+  const audioBitrates = {
+    high: 320,
+    medium: 192,
+    low: 128
+  };
+  
   return {
     videoBitrate: Math.round(base.video * multiplier),
     maxRate: Math.round(base.maxRate * multiplier),
-    bufferSize: Math.round(base.bufferSize * multiplier)
+    bufferSize: Math.round(base.bufferSize * multiplier),
+    audioBitrate: audioBitrates[audioQuality] || audioBitrates.high
   };
 }
 
@@ -378,7 +386,7 @@ async function concatenateMultiTrackSegments(trackSegments, outputPath, bitrateS
         '-maxrate', `${bitrateSettings.maxRate}k`,
         '-bufsize', `${bitrateSettings.bufferSize}k`
       ])
-      .outputOptions(['-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2'])
+      .outputOptions(['-c:a', 'aac', '-b:a', `${bitrateSettings.audioBitrate}k`, '-ar', '48000', '-ac', '2', '-aac_coder', 'twoloop'])
       .outputOptions(['-r', '30'])
       .outputOptions(['-fflags', '+genpts', '-async', '1'])
       .output(outputPath)
@@ -480,7 +488,7 @@ async function exportTimeline(clips, outputPath, onProgress = () => {}, options 
     throw new Error('INVALID_CLIPS');
   }
 
-  const { resolution = 'source', quality = 'high' } = options;
+  const { resolution = 'source', quality = 'high', audioQuality = 'high' } = options;
   
   console.log('[Export] ========== Starting timeline export ==========');
   console.log('[Export] Clips count:', clips.length);
@@ -524,7 +532,7 @@ async function exportTimeline(clips, outputPath, onProgress = () => {}, options 
   console.log('[Export] Target resolution:', targetResolution);
 
   // Get bitrate settings
-  const bitrateSettings = getBitrateSettings(resolution, quality);
+  const bitrateSettings = getBitrateSettings(resolution, quality, audioQuality);
   console.log('[Export] Bitrate settings:', bitrateSettings);
 
   const tempDir = os.tmpdir();

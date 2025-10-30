@@ -5,6 +5,62 @@
 
 // Constants
 const RECORDING_FPS = 30;
+
+/**
+ * Stabilize audio stream with gradual gain ramping and warmup
+ * @param {MediaStream} audioStream - Audio stream to stabilize
+ * @param {string} contextName - Name for logging context
+ * @returns {Promise<void>}
+ */
+async function stabilizeAudioStream(audioStream, contextName = 'audio') {
+  if (!audioStream || audioStream.getAudioTracks().length === 0) {
+    return;
+  }
+
+  console.log(`[RendererCaptureService] Stabilizing ${contextName} stream...`);
+  
+  // Create audio context for warmup and stabilization
+  const warmupContext = new (window.AudioContext || window.webkitAudioContext)({
+    sampleRate: 48000,
+    latencyHint: 'interactive'
+  });
+  
+  try {
+    // Create audio nodes for warmup
+    const source = warmupContext.createMediaStreamSource(audioStream);
+    const gainNode = warmupContext.createGain();
+    const analyser = warmupContext.createAnalyser();
+    
+    // Configure audio processing
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.8;
+    gainNode.gain.value = 0.1; // Start low
+    
+    // Connect audio graph
+    source.connect(gainNode);
+    gainNode.connect(analyser);
+    analyser.connect(warmupContext.destination);
+    
+    // Gradual gain ramp-up to prevent audio pops
+    const gainRampDuration = 0.5; // 500ms
+    const rampSteps = 20;
+    const stepDuration = gainRampDuration / rampSteps;
+    const gainStep = 0.9 / rampSteps;
+    
+    for (let i = 0; i < rampSteps; i++) {
+      gainNode.gain.value = 0.1 + (gainStep * i);
+      await new Promise(resolve => setTimeout(resolve, stepDuration * 1000));
+    }
+    
+    // Final stabilization period
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    console.log(`[RendererCaptureService] ✓ ${contextName} stream stabilized`);
+  } finally {
+    // Clean up warmup context
+    warmupContext.close();
+  }
+}
 const MIN_RESOLUTION = { width: 720, height: 480 };
 const IDEAL_RESOLUTION = { width: 1920, height: 1080 };
 
@@ -142,7 +198,13 @@ async function startScreenRecord(sourceId) {
           sampleRate: 48000,          // Professional sample rate (48 kHz)
           channelCount: 2,            // Stereo for better audio quality
           volume: 1.0,                // Full volume for maximum quality
-          latency: 0.05               // Lower latency for better responsiveness
+          latency: 0.05,              // Lower latency for better responsiveness
+          googEchoCancellation: false, // Disable Google's echo cancellation
+          googAutoGainControl: true,  // Enable Google's AGC
+          googNoiseSuppression: true, // Enable Google's noise suppression
+          googHighpassFilter: true,   // Enable high-pass filter
+          googTypingNoiseDetection: true, // Enable typing noise detection
+          googAudioMirroring: false   // Disable audio mirroring
         }
       });
       console.log('[RendererCaptureService] ✓ Microphone audio obtained');
@@ -152,6 +214,9 @@ async function startScreenRecord(sourceId) {
         screenStream.addTrack(track);
         console.log('[RendererCaptureService] Added audio track to screen stream');
       });
+
+      // Stabilize audio stream with gradual gain ramping
+      await stabilizeAudioStream(audioStream, 'microphone');
     } catch (audioError) {
       console.warn('[RendererCaptureService] ⚠️ Microphone audio failed (continuing without audio):', audioError.message);
       // Continue without audio - user can still record screen video
@@ -186,9 +251,27 @@ async function startScreenRecord(sourceId) {
     try {
       const recorder = new MediaRecorder(screenStream, {
         mimeType,
-        videoBitsPerSecond: 2500000, // 2.5 Mbps for good quality
-        audioBitsPerSecond: 96000    // 96 kbps for clean audio (like QuickTime)
+        videoBitsPerSecond: 4000000, // 4 Mbps for better video quality
+        audioBitsPerSecond: 256000   // 256 kbps for high-quality audio
       });
+
+      // Pre-buffer audio data before starting recording
+      if (audioStream) {
+        console.log('[RendererCaptureService] Pre-buffering audio data...');
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)({
+          sampleRate: 48000
+        });
+        const source = audioContext.createMediaStreamSource(audioStream);
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = 1.0;
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Let audio context run for a moment to stabilize
+        await new Promise(resolve => setTimeout(resolve, 500));
+        audioContext.close();
+        console.log('[RendererCaptureService] ✓ Audio pre-buffering complete');
+      }
 
       console.log('[RendererCaptureService] ✓ MediaRecorder created successfully');
       console.log('[RendererCaptureService] MediaRecorder state:', recorder.state);
@@ -308,6 +391,9 @@ async function startWebcamRecord() {
       audioBitsPerSecond: 256000   // 256 kbps for high-quality audio
     });
 
+    // Stabilize webcam audio stream
+    await stabilizeAudioStream(webcamStream, 'webcam');
+
     console.log('[RendererCaptureService] ✓ MediaRecorder created for webcam');
     console.log('[RendererCaptureService] ============= WEBCAM RECORDING SETUP COMPLETE =============');
 
@@ -420,7 +506,13 @@ async function startCompositeRecord(screenSourceId, pipSettings = {}) {
           sampleRate: 48000,          // Professional sample rate (48 kHz)
           channelCount: 2,            // Stereo for better audio quality
           volume: 1.0,                // Full volume for maximum quality
-          latency: 0.05               // Lower latency for better responsiveness
+          latency: 0.05,              // Lower latency for better responsiveness
+          googEchoCancellation: false, // Disable Google's echo cancellation
+          googAutoGainControl: true,  // Enable Google's AGC
+          googNoiseSuppression: true, // Enable Google's noise suppression
+          googHighpassFilter: true,   // Enable high-pass filter
+          googTypingNoiseDetection: true, // Enable typing noise detection
+          googAudioMirroring: false   // Disable audio mirroring
         }
       });
       console.log('[RendererCaptureService] *** getUserMedia() RETURNED for webcam ***');
@@ -517,6 +609,9 @@ async function startCompositeRecord(screenSourceId, pipSettings = {}) {
       videoBitsPerSecond: 4000000, // 4 Mbps for better video quality
       audioBitsPerSecond: 256000   // 256 kbps for high-quality audio
     });
+
+    // Stabilize composite audio stream
+    await stabilizeAudioStream(compositeStream, 'composite');
 
     console.log('[RendererCaptureService] ✓ Composite MediaRecorder created');
     console.log('[RendererCaptureService] ============= COMPOSITE RECORDING SETUP COMPLETE =============');

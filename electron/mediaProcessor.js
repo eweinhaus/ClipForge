@@ -89,8 +89,9 @@ async function extractTrimmedSegment(clip, outputPath, targetResolution, bitrate
         '-maxrate', `${bitrateSettings.maxRate}k`,
         '-bufsize', `${bitrateSettings.bufferSize}k`
       ])
-      // Audio: use PCM (no encoder delay) to avoid priming/gaps between segments
+      // Audio: use PCM with fade-in to prevent startup artifacts
       .outputOptions(['-c:a', 'pcm_s16le', '-ar', '48000', '-ac', '2'])
+      .outputOptions(['-af', 'afade=t=in:st=0:d=0.1,asetpts=PTS-STARTPTS'])
       // Force constant frame rate at 30fps
       .outputOptions(['-r', '30', '-vsync', 'cfr'])
       // Generate proper timestamps and fix any A/V sync issues
@@ -171,6 +172,7 @@ async function concatenateSegments(segmentPaths, outputPath, bitrateSettings, on
         '-bufsize', `${bitrateSettings.bufferSize}k`
       ])
       .outputOptions(['-c:a', 'aac', '-b:a', `${bitrateSettings.audioBitrate}k`, '-ar', '48000', '-ac', '2', '-aac_coder', 'twoloop'])
+      .outputOptions(['-af', 'afade=t=out:st=-0.1:d=0.1'])
       .outputOptions(['-r', '30'])
       // Ensure proper timing and avoid any PTS issues
       .outputOptions(['-fflags', '+genpts', '-async', '1'])
@@ -387,6 +389,7 @@ async function concatenateMultiTrackSegments(trackSegments, outputPath, bitrateS
         '-bufsize', `${bitrateSettings.bufferSize}k`
       ])
       .outputOptions(['-c:a', 'aac', '-b:a', `${bitrateSettings.audioBitrate}k`, '-ar', '48000', '-ac', '2', '-aac_coder', 'twoloop'])
+      .outputOptions(['-af', 'afade=t=out:st=-0.1:d=0.1'])
       .outputOptions(['-r', '30'])
       .outputOptions(['-fflags', '+genpts', '-async', '1'])
       .output(outputPath)

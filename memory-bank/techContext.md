@@ -11,6 +11,29 @@
 *   **Package Manager:** npm ✅
 *   **IPC Security:** contextBridge with contextIsolation ✅
 
+## Export Resolution Technologies ✅ IMPLEMENTED (EXPORT-RESOLUTION-1)
+
+### FFmpeg Scale Filters
+*   **force_original_aspect_ratio=decrease:** Prevents upscaling, maintains aspect ratio
+*   **pad filter:** Adds letterboxing/pillarboxing for aspect ratio preservation
+*   **setpts=PTS-STARTPTS:** Resets presentation timestamps for proper concatenation
+
+### Bitrate Management
+*   **Dynamic Bitrate Scaling:** Quality presets adjust bitrate (High: 100%, Medium: 70%, Low: 50%)
+*   **Resolution-Based Base Rates:** 480p (2-2.5 Mbps), 720p (5-6.25 Mbps), 1080p (8-10 Mbps)
+*   **Buffer Size Optimization:** Prevents buffer underruns with appropriate buffer sizes
+
+### Validation Technologies
+*   **Canvas API:** For thumbnail generation and resolution analysis
+*   **Real-time Validation:** React useEffect hooks for immediate feedback
+*   **Upscaling Detection:** Pixel count comparison for quality warnings
+
+### UI Technologies
+*   **React State Management:** useState for resolution/quality selection
+*   **CSS Grid Layout:** Two-column responsive layout for options
+*   **Lucide React Icons:** Consistent iconography throughout interface
+*   **Responsive Design:** Mobile-friendly layout adjustments
+
 ## Recording Technologies ✅ IMPLEMENTED (PR-RECORDING-1)
 
 ### Web APIs Used

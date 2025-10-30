@@ -362,6 +362,78 @@ The system attempts codecs in priority order until one is supported:
 *   Source type tracked: 'screen', 'webcam', or 'screen+webcam'
 *   Track assignment: 'main' for screen/webcam, 'overlay' for webcam in composite mode
 
+## Export Resolution Options ✅ IMPLEMENTED (EXPORT-RESOLUTION-1)
+
+### Export Resolution Architecture
+The export system now supports multiple resolution and quality options with intelligent validation and processing.
+
+### Resolution Options
+```javascript
+const resolutionOptions = {
+  'source': null,           // Uses highest resolution among clips
+  '720p': { width: 1280, height: 720 },
+  '1080p': { width: 1920, height: 1080 },
+  '480p': { width: 854, height: 480 }
+};
+```
+
+### Quality Presets
+```javascript
+const qualityPresets = {
+  'high': 1.0,    // 100% of base bitrate
+  'medium': 0.7,  // 70% of base bitrate
+  'low': 0.5      // 50% of base bitrate
+};
+
+const baseBitrates = {
+  '480p': { video: 2000, maxRate: 2500, bufferSize: 5000 },
+  '720p': { video: 5000, maxRate: 6250, bufferSize: 12500 },
+  '1080p': { video: 8000, maxRate: 10000, bufferSize: 20000 }
+};
+```
+
+### Smart Validation System
+```javascript
+// Analyzes timeline clips for upscaling detection
+const validateResolution = (clips, targetResolution) => {
+  const upscaledClips = clips.filter(clip => 
+    clip.width * clip.height < targetResolution.width * targetResolution.height
+  );
+  
+  const upscalePercentage = (upscaledClips.length / clips.length) * 100;
+  
+  if (upscalePercentage > 25) {
+    return { warning: 'strong', message: 'Consider using Source Resolution' };
+  } else if (upscalePercentage > 0) {
+    return { warning: 'info', message: 'Some clips will be upscaled' };
+  }
+  
+  return { warning: null };
+};
+```
+
+### FFmpeg Scale Filter Generation
+```javascript
+// Aspect ratio preservation with letterboxing
+const generateScaleFilter = (targetResolution) => {
+  const { width, height } = targetResolution;
+  return `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`;
+};
+```
+
+### Export Flow Integration
+1. **UI Selection:** User selects resolution and quality in ExportDialog
+2. **Validation:** Real-time validation warns about upscaling
+3. **Processing:** mediaProcessor applies resolution and bitrate settings
+4. **FFmpeg:** Scale filter preserves aspect ratio with letterboxing
+5. **Progress:** Enhanced progress reporting with resolution context
+
+### Component Updates
+- **ExportDialog.jsx:** Added resolution/quality dropdowns with validation
+- **mediaProcessor.js:** Added helper functions and enhanced export logic
+- **App.jsx:** Updated export handler to pass options
+- **HelpDialog.jsx:** Added export options documentation
+
 ## Build & Packaging ✅ IMPLEMENTED
 
 *   **Development:** `npm start` - Webpack dev server + Electron

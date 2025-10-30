@@ -18,6 +18,7 @@
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   width: 500px;
   max-width: 90vw;
+  height: 600px;
   max-height: 90vh;
   overflow: hidden;
   animation: dialogSlideIn 0.2s ease-out;
@@ -71,8 +72,11 @@
 
 .export-dialog-content {
   padding: 24px;
-  max-height: 60vh;
-  overflow-y: auto;
+  height: calc(100% - 120px);
+  overflow-y: visible;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .export-summary {
@@ -328,7 +332,7 @@
   display: flex;
   gap: 12px;
   justify-content: flex-end;
-  margin-top: 24px;
+  margin-top: auto;
   padding-top: 20px;
   border-top: 1px solid #e5e7eb;
 }

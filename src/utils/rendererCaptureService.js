@@ -139,7 +139,11 @@ async function startScreenRecord(sourceId) {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 44100
+          sampleRate: 48000,        // Higher sample rate for better quality
+          channelCount: 2,          // Stereo audio
+          volume: 1.0,              // Full volume
+          latency: 0.01,            // Low latency
+          sampleSize: 16            // 16-bit samples
         }
       });
       console.log('[RendererCaptureService] ✓ Microphone audio obtained');
@@ -183,7 +187,8 @@ async function startScreenRecord(sourceId) {
     try {
       const recorder = new MediaRecorder(screenStream, {
         mimeType,
-        videoBitsPerSecond: 2500000 // 2.5 Mbps for good quality
+        videoBitsPerSecond: 2500000, // 2.5 Mbps for good quality
+        audioBitsPerSecond: 128000   // 128 kbps for high-quality audio
       });
 
       console.log('[RendererCaptureService] ✓ MediaRecorder created successfully');
@@ -300,7 +305,8 @@ async function startWebcamRecord() {
     
     const recorder = new MediaRecorder(webcamStream, {
       mimeType,
-      videoBitsPerSecond: 2500000 // 2.5 Mbps
+      videoBitsPerSecond: 2500000, // 2.5 Mbps
+      audioBitsPerSecond: 128000   // 128 kbps for high-quality audio
     });
 
     console.log('[RendererCaptureService] ✓ MediaRecorder created for webcam');
@@ -412,7 +418,11 @@ async function startCompositeRecord(screenSourceId, pipSettings = {}) {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 44100
+          sampleRate: 48000,        // Higher sample rate for better quality
+          channelCount: 2,          // Stereo audio
+          volume: 1.0,              // Full volume
+          latency: 0.01,            // Low latency
+          sampleSize: 16            // 16-bit samples
         }
       });
       console.log('[RendererCaptureService] *** getUserMedia() RETURNED for webcam ***');
@@ -433,7 +443,11 @@ async function startCompositeRecord(screenSourceId, pipSettings = {}) {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 44100
+          sampleRate: 48000,        // Higher sample rate for better quality
+          channelCount: 2,          // Stereo audio
+          volume: 1.0,              // Full volume
+          latency: 0.01,            // Low latency
+          sampleSize: 16            // 16-bit samples
         }
       });
       console.log('[RendererCaptureService] ✓ Microphone audio obtained');
@@ -503,7 +517,8 @@ async function startCompositeRecord(screenSourceId, pipSettings = {}) {
     
     const recorder = new MediaRecorder(compositeStream, {
       mimeType,
-      videoBitsPerSecond: 2500000 // 2.5 Mbps
+      videoBitsPerSecond: 2500000, // 2.5 Mbps
+      audioBitsPerSecond: 128000   // 128 kbps for high-quality audio
     });
 
     console.log('[RendererCaptureService] ✓ Composite MediaRecorder created');
@@ -578,8 +593,9 @@ async function stopRecording(recorder, chunks, outputPath, recordingData = {}) {
           console.log('[RendererCaptureService] Chunks received:', chunks.length);
           
           if (chunks.length === 0) {
-            console.warn('[RendererCaptureService] No chunks received, but continuing...');
-            // Don't throw error, just create empty file
+            console.error('[RendererCaptureService] No chunks received - recording failed');
+            console.error('[RendererCaptureService] This usually indicates a MediaRecorder issue or stream problem');
+            throw new Error('Recording failed: No data chunks were captured. This may be due to stream issues or MediaRecorder problems.');
           }
           
           // Combine chunks into blob
@@ -587,27 +603,9 @@ async function stopRecording(recorder, chunks, outputPath, recordingData = {}) {
           console.log('[RendererCaptureService] Blob created, size:', blob.size);
           
           if (blob.size === 0) {
-            console.warn('[RendererCaptureService] Empty blob, creating minimal file...');
-            // Create a minimal valid video file
-            const minimalBlob = new Blob([''], { type: recorder.mimeType });
-            const arrayBuffer = await minimalBlob.arrayBuffer();
-            const uint8Array = new Uint8Array(arrayBuffer);
-            
-            const result = await window.electronAPI.writeRecordingFile(outputPath, uint8Array);
-            if (!result.success) {
-              throw new Error(result.error.message);
-            }
-            
-            resolve({
-              filePath: outputPath,
-              duration: recordingData.duration || 1,
-              width: recordingData.width || 640,
-              height: recordingData.height || 480,
-              fileSize: '0.00',
-              thumbnail: null,
-              mimeType: recorder.mimeType
-            });
-            return;
+            console.error('[RendererCaptureService] Empty blob created - recording failed');
+            console.error('[RendererCaptureService] This indicates the MediaRecorder did not capture any data');
+            throw new Error('Recording failed: No data was captured. The MediaRecorder may not have been properly configured or the stream may be invalid.');
           }
           
           // Convert blob to buffer and save to file

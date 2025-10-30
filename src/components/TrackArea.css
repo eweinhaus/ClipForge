@@ -1,6 +1,7 @@
 .track-area {
   position: relative;
   border-bottom: 1px solid #e9ecef;
+  flex-shrink: 0; /* Prevent tracks from shrinking */
 }
 
 .track-area:last-child {

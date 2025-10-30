@@ -794,6 +794,12 @@ function AppContent() {
       console.log('[App] Recording metadata:', metadata);
 
       // Create clip object and add to timeline
+      // Track assignment logic:
+      // - 'webcam' recordings -> overlay track (for PiP)
+      // - 'screen+webcam' recordings -> overlay track (composite PiP)
+      // - 'screen' recordings -> main track (full screen)
+      const assignedTrack = (recordingType === 'webcam' || recordingType === 'screen+webcam') ? 'overlay' : 'main';
+      
       const newClip = {
         id: generateUuid(),
         fileName: fileName,
@@ -806,7 +812,7 @@ function AppContent() {
         trimStart: 0,
         trimEnd: metadata.duration,
         order: clips.length,
-        track: recordingType === 'webcam' ? 'overlay' : 'main',
+        track: assignedTrack,
         hasAudio: true,
         audioVolume: 1.0,
         isMuted: false,

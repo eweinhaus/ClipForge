@@ -129,6 +129,7 @@ function createCompositeStream(screenStream, webcamStream, settings, fps = 30) {
   // Start the compositing animation loop
   const startCompositingLoop = () => {
     isCompositing = true;
+    console.log('[VideoCompositor] Starting compositing loop...');
     
     const compositeFrame = () => {
       if (!isCompositing) return;
@@ -157,16 +158,30 @@ function createCompositeStream(screenStream, webcamStream, settings, fps = 30) {
     
     // Start the loop
     compositeFrame();
+    console.log('[VideoCompositor] Compositing loop started');
   };
   
   // Create MediaStream from canvas
   const compositeStream = canvas.captureStream(fps);
+  console.log('[VideoCompositor] Canvas stream created:', {
+    id: compositeStream.id,
+    active: compositeStream.active,
+    videoTracks: compositeStream.getVideoTracks().length,
+    audioTracks: compositeStream.getAudioTracks().length
+  });
   
   // Add audio tracks from screen stream (microphone)
   const audioTracks = screenStream.getAudioTracks();
   audioTracks.forEach(track => {
     compositeStream.addTrack(track);
     console.log('[VideoCompositor] Added audio track to composite stream');
+  });
+  
+  console.log('[VideoCompositor] Final composite stream:', {
+    id: compositeStream.id,
+    active: compositeStream.active,
+    videoTracks: compositeStream.getVideoTracks().length,
+    audioTracks: compositeStream.getAudioTracks().length
   });
   
   // Cleanup function

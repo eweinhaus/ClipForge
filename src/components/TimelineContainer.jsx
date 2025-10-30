@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import TimelineHeader from './TimelineHeader';
 import TimelineContent from './TimelineContent';
 import TimelineControls from './TimelineControls';
 import { useTimelineKeyboard } from '../hooks/useTimelineKeyboard';
@@ -24,7 +23,7 @@ export default function TimelineContainer({
   onSplitClip,
   canSplitClip
 }) {
-  const timelineHeight = 240; // Fixed height - increased for 3 tracks
+  const timelineHeight = 200; // Fixed height - back to original
   const [zoomLevel, setZoomLevel] = useState(() => {
     try {
       const saved = localStorage.getItem('clipforge.timelinePrefs');
@@ -129,27 +128,22 @@ export default function TimelineContainer({
         }
       }}
     >
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <TimelineHeader 
-          hiddenTracks={hiddenTracks}
-          onToggleTrackVisibility={handleToggleTrackVisibility}
-        />
-        <TimelineContent
-          clips={clips}
-          selectedClipId={selectedClipId}
-          onSelectClip={onSelectClip}
-          onDeleteClip={onDeleteClip}
-          onDuplicateClip={onDuplicateClip}
-          onResetTrim={onResetTrim}
-          playheadPosition={playheadPosition}
-          onSeekToTime={onSeekToTime}
-          zoomLevel={zoomLevel}
-          scrollPosition={scrollPosition}
-          onScrollChange={handleScrollChange}
-          onTrimChange={onTrimChange}
-          hiddenTracks={hiddenTracks}
-        />
-      </div>
+      <TimelineContent
+        clips={clips}
+        selectedClipId={selectedClipId}
+        onSelectClip={onSelectClip}
+        onDeleteClip={onDeleteClip}
+        onDuplicateClip={onDuplicateClip}
+        onResetTrim={onResetTrim}
+        playheadPosition={playheadPosition}
+        onSeekToTime={onSeekToTime}
+        zoomLevel={zoomLevel}
+        scrollPosition={scrollPosition}
+        onScrollChange={handleScrollChange}
+        onTrimChange={onTrimChange}
+        hiddenTracks={hiddenTracks}
+        onToggleTrackVisibility={handleToggleTrackVisibility}
+      />
       <TimelineControls
         zoomLevel={zoomLevel}
         onZoomChange={handleZoomChange}

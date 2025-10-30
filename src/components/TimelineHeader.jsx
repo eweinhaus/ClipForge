@@ -14,7 +14,10 @@ export default function TimelineHeader({ hiddenTracks = [], onToggleTrackVisibil
         <div 
           key={track.id} 
           className="track-label"
-          style={{ height: `${track.height}px` }}
+          style={{ 
+            height: `${track.height}px`,
+            minHeight: `${track.height}px`
+          }}
         >
           <span className="track-name">{track.label}</span>
           {onToggleTrackVisibility && (

@@ -28,12 +28,14 @@ export default function TrackArea({
       className={`track-area track-area--${trackId}`}
       style={{ 
         height: `${trackConfig.height}px`,
-        backgroundColor: trackId === 'audio' ? '#f5f5f5' : 'transparent'
+        backgroundColor: trackId === 'audio' ? '#f0fff4' : 'transparent',
+        minHeight: `${trackConfig.height}px`, // Ensure minimum height
+        flex: 1 // Take remaining space in track-row
       }}
       data-track-id={trackId}
     >
       <div className="track">
-        {clips.map((clip) => {
+        {clips.length > 0 ? clips.map((clip) => {
           // Ensure clip has required properties with fallbacks
           const clipDuration = clip.duration || 0;
           const clipTrimStart = clip.trimStart || 0;
@@ -65,7 +67,19 @@ export default function TrackArea({
               />
             </ClipBlockErrorBoundary>
           );
-        })}
+        }) : (
+          // Show empty track placeholder
+          <div className="empty-track" style={{ 
+            height: '100%', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            color: '#999',
+            fontSize: '12px'
+          }}>
+            Empty {trackConfig.label}
+          </div>
+        )}
       </div>
     </div>
   );

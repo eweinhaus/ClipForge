@@ -7,16 +7,82 @@
 .timeline-scroll-container {
   height: 100%;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: auto; /* Enable vertical scrolling */
+}
+
+.timeline-with-labels {
+  position: relative;
+  min-height: 100%;
+}
+
+.timeline-ruler-row {
+  display: flex;
+  height: 40px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #ffffff;
+}
+
+.timeline-label-spacer {
+  width: 120px;
+  min-width: 120px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-right: 1px solid #e9ecef;
 }
 
 .timeline-track-container {
   position: relative;
-  height: 100%;
-  min-width: 100%;
+  flex: 1;
 }
 
 .track-area-wrapper {
   position: relative;
-  height: calc(100% - 40px); /* Account for time ruler height */
+  display: flex;
+  flex-direction: column;
+}
+
+.track-row {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.track-label {
+  width: 120px;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-right: 1px solid #e9ecef;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.track-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #495057;
+  white-space: nowrap;
+}
+
+.track-visibility-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  color: #6c757d;
+  transition: color 0.2s ease;
+}
+
+.track-visibility-toggle:hover {
+  color: #495057;
+}
+
+.track-visibility-toggle:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
 }

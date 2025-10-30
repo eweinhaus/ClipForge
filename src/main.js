@@ -218,17 +218,18 @@ ipcMain.handle('select-file', async (event) => {
   }
 });
 
-ipcMain.handle('export-timeline', async (event, { clips, outputPath }) => {
+ipcMain.handle('export-timeline', async (event, { clips, outputPath, options = {} }) => {
   try {
     console.log('[IPC] export-timeline request received', {
       clipsCount: clips.length,
-      outputPath
+      outputPath,
+      options
     });
     
     await mediaProcessor.exportTimeline(clips, outputPath, (progress) => {
       // Send progress updates to renderer
       mainWindow.webContents.send('export-progress', progress);
-    });
+    }, options);
     
     console.log('[IPC] Export completed successfully');
     return { success: true, outputPath };

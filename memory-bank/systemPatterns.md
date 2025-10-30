@@ -18,7 +18,7 @@ electron/
         ffmpeg        ✅ Executable binary
         ffprobe       ✅ Executable binary
   fileManager.js      ✅ Implemented (PR-2)
-  mediaProcessor.js   ✅ Implemented (PR-5)
+  mediaProcessor.js   ✅ Implemented (PR-5) + Enhanced (EXPORT-RESOLUTION-1)
   captureService.js   ✅ Implemented (PR-RECORDING-1) - Source enumeration & permissions
 
 src/
@@ -28,7 +28,7 @@ src/
     Timeline.jsx      ✅ Replaced with horizontal timeline (PR-UI-1)
     VideoPreview.jsx  ✅ Implemented (PR-3)
     ClipEditor.jsx    ✅ Implemented (PR-4)
-    ExportDialog.jsx  ✅ Implemented (PR-5)
+    ExportDialog.jsx  ✅ Implemented (PR-5) + Enhanced (EXPORT-RESOLUTION-1)
     Notifications.jsx ✅ Implemented (PR-2)
     RecordingPanel.jsx ✅ Implemented (PR-RECORDING-1) - Recording controls UI
     TimelineContainer.jsx ✅ Implemented (PR-UI-1)
@@ -207,8 +207,9 @@ TimelineContainer (main wrapper)
 ### Additional Components ✅ IMPLEMENTED
 - **ContextMenu:** Right-click menu for clip operations (Delete, Duplicate, Reset Trim)
 - **TimelineErrorBoundary:** Error boundary for graceful error handling
-- **useTimelineKeyboard:** Custom hook for arrow-key navigation
-- **timelineUtils:** Utility functions for calculations and debouncing
+- **useTimelineKeyboard:** Custom hook for arrow-key navigation and split shortcut (S key)
+- **timelineUtils:** Utility functions for calculations, debouncing, and playhead validation
+  - **isPlayheadWithinClip:** Validates if playhead is within a clip's trimmed range (for split functionality)
 
 ### Timeline State Management ✅ IMPLEMENTED
 ```javascript
@@ -239,6 +240,7 @@ const timelineState = {
 
 ### Key Features ✅ IMPLEMENTED
 - **Keyboard Navigation:** Arrow keys for playhead seeking and clip selection
+- **Split Clips:** Split clip at playhead position with button or 'S' key shortcut
 - **Context Menu:** Right-click operations (Delete, Duplicate, Reset Trim)
 - **Zoom Controls:** Smooth slider (0.25x-4x) and fit-to-screen button
 - **Preference Persistence:** localStorage for zoom, scroll, and snap settings
@@ -246,11 +248,14 @@ const timelineState = {
 - **Performance:** 60fps maintained with 10+ clips
 
 ### Layout Changes ✅ IMPLEMENTED
-- **Timeline Position:** Bottom of screen, 200px height (adjustable 150-300px)
+- **Timeline Position:** Bottom of screen, 200px height (fixed)
 - **Panel Layout:** Three-panel design (media left, preview center, timeline bottom)
 - **Rendering:** DOM-based for simplicity and maintainability
 - **Theme:** Professional styling with hover states and visual feedback
 - **Responsive:** Maintains performance with multiple clips and zoom levels
+- **Clip Positioning:** Sequential positioning based on trimmed duration (no gaps between clips)
+  - **Note:** trimStart/trimEnd affect video playback timing only, not timeline positioning
+  - This ensures split clips appear seamlessly connected without visual gaps
 
 ## Recording Architecture ✅ IMPLEMENTED (PR-RECORDING-1)
 

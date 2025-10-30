@@ -202,7 +202,15 @@ export default function HelpDialog({ isOpen, onClose }) {
                 <li>Professional timeline editing</li>
                 <li>Snap-to-grid trimming</li>
                 <li>Multi-level zoom (0.25x - 4x)</li>
-                <li>Export to MP4</li>
+                <li>Export to MP4 with resolution options</li>
+                <li>Screen & webcam recording</li>
+              </ul>
+              <p><strong>Export Options:</strong></p>
+              <ul>
+                <li><strong>Resolution:</strong> Source, 720p, 1080p, 480p</li>
+                <li><strong>Quality:</strong> High, Medium, Low</li>
+                <li><strong>Smart Validation:</strong> Warns about upscaling</li>
+                <li><strong>Aspect Ratio:</strong> Preserved with letterboxing</li>
               </ul>
               <p><strong>System Requirements:</strong></p>
               <ul>

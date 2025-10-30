@@ -37,9 +37,11 @@ function timeout(ms) {
  * @param {Object} clip - Clip object with filePath, trimStart, trimEnd
  * @param {string} outputPath - Path for the trimmed segment
  * @param {Object} targetResolution - Target resolution {width, height}
+ * @param {Object} bitrateSettings - Bitrate settings {videoBitrate, maxRate, bufferSize}
+ * @param {Function} onProgress - Progress callback
  * @returns {Promise<void>}
  */
-async function extractTrimmedSegment(clip, outputPath, targetResolution, onProgress) {
+async function extractTrimmedSegment(clip, outputPath, targetResolution, bitrateSettings, onProgress) {
   return new Promise((resolve, reject) => {
     const trimDuration = clip.trimEnd - clip.trimStart;
     let lastProgress = 0;
@@ -75,12 +77,18 @@ async function extractTrimmedSegment(clip, outputPath, targetResolution, onProgr
       // Video filter: scale + pad + reset PTS to start at 0
       .outputOptions([
         '-vf', 
-        `scale=${targetResolution.width}:${targetResolution.height}:force_original_aspect_ratio=decrease,pad=${targetResolution.width}:${targetResolution.height}:(ow-iw)/2:(oh-ih)/2,setpts=PTS-STARTPTS`
+        generateScaleFilter(targetResolution) + ',setpts=PTS-STARTPTS'
       ])
       // Audio filter: reset PTS to start at 0 and ensure sync
       .outputOptions(['-af', 'asetpts=PTS-STARTPTS'])
-      // Video encoding
-      .outputOptions(['-c:v', 'libx264', '-preset', 'fast', '-crf', '23'])
+      // Video encoding with bitrate settings
+      .outputOptions([
+        '-c:v', 'libx264', 
+        '-preset', 'fast', 
+        '-b:v', `${bitrateSettings.videoBitrate}k`,
+        '-maxrate', `${bitrateSettings.maxRate}k`,
+        '-bufsize', `${bitrateSettings.bufferSize}k`
+      ])
       // Audio: use PCM (no encoder delay) to avoid priming/gaps between segments
       .outputOptions(['-c:a', 'pcm_s16le', '-ar', '48000', '-ac', '2'])
       // Force constant frame rate at 30fps
@@ -100,10 +108,11 @@ async function extractTrimmedSegment(clip, outputPath, targetResolution, onProgr
  * This approach is more robust than concat demuxer for segments with different properties
  * @param {string[]} segmentPaths - Array of segment file paths
  * @param {string} outputPath - Final output path
+ * @param {Object} bitrateSettings - Bitrate settings {videoBitrate, maxRate, bufferSize}
  * @param {Function} onProgress - Progress callback
  * @returns {Promise<void>}
  */
-async function concatenateSegments(segmentPaths, outputPath, onProgress) {
+async function concatenateSegments(segmentPaths, outputPath, bitrateSettings, onProgress) {
   return new Promise((resolve, reject) => {
     let lastProgress = 0;
     
@@ -153,8 +162,14 @@ async function concatenateSegments(segmentPaths, outputPath, onProgress) {
       .complexFilter(filterComplex)
       // Map concatenated outputs
       .outputOptions(['-map', '[vcat]', '-map', '[acat]'])
-      // Final encode: h264 + AAC (one-time encoding, avoids AAC priming between clips)
-      .outputOptions(['-c:v', 'libx264', '-preset', 'fast', '-crf', '23'])
+      // Final encode: h264 + AAC with bitrate settings
+      .outputOptions([
+        '-c:v', 'libx264', 
+        '-preset', 'fast', 
+        '-b:v', `${bitrateSettings.videoBitrate}k`,
+        '-maxrate', `${bitrateSettings.maxRate}k`,
+        '-bufsize', `${bitrateSettings.bufferSize}k`
+      ])
       .outputOptions(['-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2'])
       .outputOptions(['-r', '30'])
       // Ensure proper timing and avoid any PTS issues
@@ -182,33 +197,108 @@ function cleanupTempFiles(tempFiles) {
 }
 
 /**
+ * Get resolution dimensions for a given resolution preset
+ * @param {string} resolution - Resolution preset ('source', '720p', '1080p', '480p')
+ * @returns {Object} Resolution dimensions {width, height}
+ */
+function getResolutionDimensions(resolution) {
+  switch (resolution) {
+    case '720p': return { width: 1280, height: 720 };
+    case '1080p': return { width: 1920, height: 1080 };
+    case '480p': return { width: 854, height: 480 };
+    case 'source': return null; // Will be determined from clips
+    default: return null;
+  }
+}
+
+/**
+ * Get bitrate settings for a given resolution and quality
+ * @param {string} resolution - Resolution preset
+ * @param {string} quality - Quality preset ('high', 'medium', 'low')
+ * @returns {Object} Bitrate settings {videoBitrate, maxRate, bufferSize}
+ */
+function getBitrateSettings(resolution, quality) {
+  const qualityMultipliers = {
+    high: 1.0,
+    medium: 0.7,
+    low: 0.5
+  };
+  
+  const multiplier = qualityMultipliers[quality] || 1.0;
+  
+  // Base bitrates for different resolutions
+  const baseBitrates = {
+    '480p': { video: 2000, maxRate: 2500, bufferSize: 5000 },
+    '720p': { video: 5000, maxRate: 6250, bufferSize: 12500 },
+    '1080p': { video: 8000, maxRate: 10000, bufferSize: 20000 },
+    'source': { video: 5000, maxRate: 6250, bufferSize: 12500 } // Default fallback
+  };
+  
+  const base = baseBitrates[resolution] || baseBitrates['source'];
+  
+  return {
+    videoBitrate: Math.round(base.video * multiplier),
+    maxRate: Math.round(base.maxRate * multiplier),
+    bufferSize: Math.round(base.bufferSize * multiplier)
+  };
+}
+
+/**
+ * Generate FFmpeg scale filter for resolution conversion
+ * @param {Object} targetResolution - Target resolution {width, height}
+ * @returns {string} FFmpeg scale filter string
+ */
+function generateScaleFilter(targetResolution) {
+  if (!targetResolution) return null;
+  
+  const { width, height } = targetResolution;
+  return `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`;
+}
+
+/**
  * Export timeline to MP4
  * @param {Array} clips - Array of clip objects
  * @param {string} outputPath - Output file path
  * @param {Function} onProgress - Progress callback (0-100)
+ * @param {Object} options - Export options {resolution, quality}
  * @returns {Promise<string>} Output path on success
  */
-async function exportTimeline(clips, outputPath, onProgress = () => {}) {
+async function exportTimeline(clips, outputPath, onProgress = () => {}, options = {}) {
   if (!clips || clips.length === 0) {
     throw new Error('INVALID_CLIPS');
   }
 
+  const { resolution = 'source', quality = 'high' } = options;
+  
   console.log('[Export] ========== Starting timeline export ==========');
   console.log('[Export] Clips count:', clips.length);
   console.log('[Export] Output path:', outputPath);
+  console.log('[Export] Resolution:', resolution);
+  console.log('[Export] Quality:', quality);
 
   // Sort clips by order
   const sortedClips = [...clips].sort((a, b) => a.order - b.order);
   console.log('[Export] Sorted clips by order:', sortedClips.map(c => ({ name: c.fileName, order: c.order })));
 
-  // Determine target resolution (use the highest resolution among all clips)
-  const targetResolution = sortedClips.reduce((max, clip) => {
-    const clipPixels = clip.width * clip.height;
-    const maxPixels = max.width * max.height;
-    return clipPixels > maxPixels ? { width: clip.width, height: clip.height } : max;
-  }, { width: sortedClips[0].width, height: sortedClips[0].height });
+  // Determine target resolution
+  let targetResolution;
+  if (resolution === 'source') {
+    // Use the highest resolution among all clips
+    targetResolution = sortedClips.reduce((max, clip) => {
+      const clipPixels = clip.width * clip.height;
+      const maxPixels = max.width * max.height;
+      return clipPixels > maxPixels ? { width: clip.width, height: clip.height } : max;
+    }, { width: sortedClips[0].width, height: sortedClips[0].height });
+  } else {
+    // Use the specified resolution preset
+    targetResolution = getResolutionDimensions(resolution);
+  }
   
   console.log('[Export] Target resolution:', targetResolution);
+
+  // Get bitrate settings
+  const bitrateSettings = getBitrateSettings(resolution, quality);
+  console.log('[Export] Bitrate settings:', bitrateSettings);
 
   const tempDir = os.tmpdir();
   const tempFiles = [];
@@ -239,7 +329,7 @@ async function exportTimeline(clips, outputPath, onProgress = () => {}) {
       const segmentEndProgress = 5 + (50 * (i + 1) / sortedClips.length);
       
       await Promise.race([
-        extractTrimmedSegment(clip, segmentPath, targetResolution, (segmentPercent) => {
+        extractTrimmedSegment(clip, segmentPath, targetResolution, bitrateSettings, (segmentPercent) => {
           // Map segment progress to overall progress
           const mappedProgress = segmentStartProgress + (segmentPercent * (segmentEndProgress - segmentStartProgress) / 100);
           onProgress(Math.round(mappedProgress));
@@ -257,7 +347,7 @@ async function exportTimeline(clips, outputPath, onProgress = () => {}) {
     console.log('[Export] Step 2: Concatenating segments...');
     onProgress(55);
     await Promise.race([
-      concatenateSegments(segmentPaths, outputPath, (percent) => {
+      concatenateSegments(segmentPaths, outputPath, bitrateSettings, (percent) => {
         // Map 0-100% to 55-90% (35% range for better granularity)
         const mappedProgress = Math.min(55 + (percent * 0.35), 90);
         onProgress(Math.round(mappedProgress));
@@ -299,4 +389,9 @@ async function exportTimeline(clips, outputPath, onProgress = () => {}) {
   }
 }
 
-module.exports = { exportTimeline };
+module.exports = { 
+  exportTimeline,
+  getResolutionDimensions,
+  getBitrateSettings,
+  generateScaleFilter
+};

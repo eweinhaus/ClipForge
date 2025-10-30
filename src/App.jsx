@@ -409,8 +409,9 @@ function AppContent() {
   /**
    * Handle export request
    * @param {string} outputPath - Path where to save the exported video
+   * @param {Object} options - Export options {resolution, quality}
    */
-  const handleExport = async (outputPath) => {
+  const handleExport = async (outputPath, options = {}) => {
     setIsExporting(true);
     setExportProgress(0);
     setExportError(null);
@@ -418,7 +419,8 @@ function AppContent() {
     try {
       const result = await window.electronAPI.exportTimeline({
         clips,
-        outputPath
+        outputPath,
+        options
       });
 
       if (result.success) {

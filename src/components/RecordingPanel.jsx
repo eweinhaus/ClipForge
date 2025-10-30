@@ -121,25 +121,6 @@ const RecordingPanel = ({
         </div>
       )}
 
-      {/* Instructions */}
-      {isIdle && (
-        <div className="recording-instructions">
-          <p>Choose a recording type to get started:</p>
-          <ul>
-            <li><strong>Screen:</strong> Record your entire screen or a specific window</li>
-            <li><strong>Webcam:</strong> Record from your camera with audio</li>
-            <li><strong>Screen + Camera:</strong> Record both simultaneously with picture-in-picture</li>
-          </ul>
-          <div className="recording-tips">
-            <p><strong>💡 Tips:</strong></p>
-            <ul>
-              <li>Avoid recording ClipForge itself (marked with ⚠️) - this can cause blank screens</li>
-              <li>Try recording other applications or your entire screen instead</li>
-              <li>If you get a blank screen, try a different source</li>
-            </ul>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

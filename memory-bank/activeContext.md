@@ -2,7 +2,7 @@
 
 ## Current Work Focus
 
-**MVP COMPLETE - HORIZONTAL TIMELINE COMPLETE - RECORDING FEATURE IN PROGRESS** 🚀
+**MVP COMPLETE - HORIZONTAL TIMELINE COMPLETE - SPLIT CLIPS FEATURE COMPLETE - EXPORT RESOLUTION OPTIONS COMPLETE - RECORDING FEATURE IN PROGRESS** 🚀
 
 **MVP PRs COMPLETED** ✅
 **PR-1 COMPLETED** ✅ - Project Setup & Boilerplate
@@ -23,7 +23,90 @@
 **NEW RECORDING FEATURE** 🎥
 **PR-RECORDING-1** 🔄 - Screen & Webcam Recording (IN PROGRESS - Staged for Commit)
 
+**NEW SPLIT CLIPS FEATURE** ✂️
+**SPLIT-CLIPS-1** ✅ - Split Clips at Playhead Position (COMPLETED)
+
+**NEW EXPORT RESOLUTION OPTIONS** 🎬
+**EXPORT-RESOLUTION-1** ✅ - Export Resolution & Quality Options (COMPLETED)
+
 ## Recent Changes
+
+### Export Resolution Options Implementation (Latest - Completed)
+*   **ExportDialog UI Enhancements:** Complete resolution and quality selection interface
+    *   ✅ Resolution dropdown: Source Resolution, 720p (1280×720), 1080p (1920×1080), 480p (854×480)
+    *   ✅ Quality dropdown: High, Medium, Low presets with intelligent bitrate scaling
+    *   ✅ Smart validation system that warns about upscaling low-resolution content
+    *   ✅ Enhanced progress reporting with resolution and quality context
+    *   ✅ Professional two-column layout with responsive design
+    *   ✅ Real-time validation warnings with contextual suggestions
+*   **MediaProcessor Extensions:** Comprehensive resolution and quality processing
+    *   ✅ Resolution dimension calculations for all presets
+    *   ✅ Quality-based bitrate mapping (High: 100%, Medium: 70%, Low: 50%)
+    *   ✅ FFmpeg scale filter generation with aspect ratio preservation
+    *   ✅ Dynamic bitrate settings by resolution (480p: 2-2.5 Mbps, 720p: 5-6.25 Mbps, 1080p: 8-10 Mbps)
+    *   ✅ Aspect ratio preservation using `force_original_aspect_ratio=decrease` with padding
+*   **Smart Validation System:** Intelligent content analysis and user guidance
+    *   ✅ Analyzes all timeline clips to detect upscaling scenarios
+    *   ✅ Warning thresholds: >25% upscaling shows strong warning, >0% shows info notice
+    *   ✅ Suggests optimal resolution settings based on source content
+    *   ✅ Real-time validation as user changes settings
+*   **Technical Implementation:** Robust backend processing
+    *   ✅ Updated IPC handlers to pass resolution/quality options through pipeline
+    *   ✅ Enhanced export flow with comprehensive error handling
+    *   ✅ Progress reporting integration with resolution/quality context
+    *   ✅ Seamless integration with existing export functionality
+*   **Testing & Quality Assurance:** Comprehensive validation
+    *   ✅ Unit tests for all helper functions (14 tests passing)
+    *   ✅ Integration testing with different resolution/quality combinations
+    *   ✅ Manual QA verification of aspect ratio preservation and quality settings
+    *   ✅ App successfully packages with all new features
+*   **Documentation Updates:** Complete user and developer documentation
+    *   ✅ Updated HelpDialog with export options information
+    *   ✅ Enhanced README with detailed feature descriptions
+    *   ✅ Memory bank progress updates with implementation summary
+    *   ✅ Created comprehensive implementation documentation
+
+### Split Clips Feature Implementation (Previous - Completed)
+*   **Split Button in TimelineControls:**
+    *   ✅ Added Split button with Scissors icon (lucide-react)
+    *   ✅ Positioned next to Export button in timeline controls
+    *   ✅ Gray styling to differentiate from primary export action
+    *   ✅ Disabled state when playhead not within valid clip range
+    *   ✅ Tooltip shows "Split Clip at Playhead (S)"
+*   **Split Logic in App.jsx:**
+    *   ✅ Implemented `handleSplitClip()` function
+    *   ✅ Calculates playhead position relative to clip timeline position
+    *   ✅ Validates split position (not at exact edges, within trim range)
+    *   ✅ Creates two new clips: first from start to split, second from split to end
+    *   ✅ Properly updates trimStart/trimEnd for both resulting clips
+    *   ✅ Maintains all clip properties (thumbnail, metadata, etc.)
+    *   ✅ Automatically re-orders subsequent clips (order property increment)
+    *   ✅ Auto-selects second clip after split for UX continuity
+    *   ✅ Shows success toast notification
+*   **Timeline Utils Enhancement:**
+    *   ✅ Added `isPlayheadWithinClip()` helper function
+    *   ✅ Calculates timeline position for clips dynamically
+    *   ✅ Validates playhead is within trimmed clip range (not at edges)
+    *   ✅ Handles tolerance for floating-point precision (0.01s)
+    *   ✅ Comprehensive unit tests (13 test cases) covering edge cases
+*   **Keyboard Shortcut:**
+    *   ✅ Added 'S' key support in useTimelineKeyboard hook
+    *   ✅ Only active when timeline focused and split is valid
+    *   ✅ Integrated with existing keyboard navigation system
+*   **Help Documentation:**
+    *   ✅ Updated HelpDialog with new 'S' shortcut in Timeline Editing section
+    *   ✅ Clear description: "Split clip at playhead position"
+*   **UI Fix - Gap Issue:**
+    *   ✅ Fixed visual gap between split clips in TrackArea.jsx
+    *   ✅ Removed incorrect `clipTrimStart * pxPerSecond` offset from clip positioning
+    *   ✅ Clips now positioned sequentially based only on cumulative duration
+    *   ✅ trimStart/trimEnd affect video playback timing, not timeline positioning
+    *   ✅ Split clips appear seamlessly connected with no gaps
+*   **Testing:**
+    *   ✅ Manual testing completed - split works correctly with no gaps
+    *   ✅ Unit tests written for isPlayheadWithinClip utility function
+    *   ✅ Edge cases handled (boundaries, short clips, multiple splits)
+    *   ✅ Export functionality verified with split clips
 
 ### Recording Feature Implementation (Current - Staged for Commit)
 *   **New RecordingPanel Component:** Complete UI for screen/webcam/composite recording
@@ -205,6 +288,7 @@
 ## Next Steps
 
 **HORIZONTAL TIMELINE UI COMPLETE** 🎉
+**EXPORT RESOLUTION OPTIONS COMPLETE** 🎬
 **RECORDING FEATURE - STAGED FOR COMMIT** 🎥
 
 **Current Task:**
@@ -232,6 +316,9 @@
 - Recording quality settings (resolution, bitrate)
 - Windows and Linux builds
 - User accounts and cloud storage
+
+**Recently Completed Features:**
+- ✅ Split Clips at Playhead Position - Button and keyboard shortcut (S key) working
 
 **PROJECT STATUS: READY FOR RELEASE v1.2.0 (with Recording)** 🚀
 

@@ -987,24 +987,30 @@ function AppContent() {
         </aside>
 
         <main className="preview-panel">
-          <VideoPreview
-            ref={videoPreviewRef}
-            clip={clips.find(c => c.id === selectedClipId) || null}
-            onPlaybackChange={(timeInClip) => {
-              if (selectedClipId) {
-                const timelinePosition = calculateTimelinePosition(selectedClipId, timeInClip);
-                setCurrentPlaybackTime(timelinePosition);
-              }
-            }}
-            onClipEnded={handleClipEnded}
-            shouldAutoPlay={shouldAutoPlay}
-            onAutoPlayStarted={() => setShouldAutoPlay(false)}
-          />
-          <ClipEditor
-            clip={clips.find(c => c.id === selectedClipId) || null}
-            onTrimChange={handleTrimChange}
-            onPipSettingsChange={handlePipSettingsChange}
-          />
+          <div className="preview-content">
+            <div className="video-preview-main">
+              <VideoPreview
+                ref={videoPreviewRef}
+                clip={clips.find(c => c.id === selectedClipId) || null}
+                onPlaybackChange={(timeInClip) => {
+                  if (selectedClipId) {
+                    const timelinePosition = calculateTimelinePosition(selectedClipId, timeInClip);
+                    setCurrentPlaybackTime(timelinePosition);
+                  }
+                }}
+                onClipEnded={handleClipEnded}
+                shouldAutoPlay={shouldAutoPlay}
+                onAutoPlayStarted={() => setShouldAutoPlay(false)}
+              />
+            </div>
+            <div className="clip-editor-sidebar">
+              <ClipEditor
+                clip={clips.find(c => c.id === selectedClipId) || null}
+                onTrimChange={handleTrimChange}
+                onPipSettingsChange={handlePipSettingsChange}
+              />
+            </div>
+          </div>
         </main>
       </div>
 

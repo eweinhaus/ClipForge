@@ -109,7 +109,7 @@ body {
   display: flex;
   flex: 1;
   overflow: hidden;
-  padding-bottom: 200px; /* Space for timeline */
+  padding-bottom: 280px; /* Space for timeline - increased for taller tracks */
 }
 
 /* Media panel (left side) */
@@ -133,6 +133,37 @@ body {
   flex-direction: column;
   overflow: hidden;
   background: var(--bg-light);
+}
+
+/* Preview content - horizontal layout */
+.preview-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Video preview main area (left side, takes most space) */
+.video-preview-main {
+  flex: 1;
+  overflow: hidden;
+  background: var(--bg-white);
+  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Clip editor sidebar (right of video preview) */
+.clip-editor-sidebar {
+  width: 300px;
+  min-width: 280px;
+  max-width: 350px;
+  border-left: 1px solid var(--border);
+  background: var(--bg-white);
+  overflow-y: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Common button styles */
@@ -381,6 +412,11 @@ input[type="number"]:focus {
   .media-panel {
     width: 250px;
   }
+  
+  .clip-editor-sidebar {
+    width: 280px;
+    min-width: 250px;
+  }
 }
 
 @media (max-width: 900px) {
@@ -389,7 +425,35 @@ input[type="number"]:focus {
   }
   
   .main-content {
-    padding-bottom: 150px; /* Smaller timeline on mobile */
+    padding-bottom: 220px; /* Smaller timeline on mobile */
+  }
+  
+  .clip-editor-sidebar {
+    width: 250px;
+    min-width: 220px;
+  }
+  
+  .video-preview-main {
+    min-width: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .preview-content {
+    flex-direction: column;
+  }
+  
+  .clip-editor-sidebar {
+    width: 100%;
+    max-width: none;
+    height: 200px;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    overflow-y: auto;
+  }
+  
+  .video-preview-main {
+    min-width: auto;
   }
 }
 

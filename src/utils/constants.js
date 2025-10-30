@@ -55,7 +55,7 @@ export const TRACK_CONFIG = [
     label: 'Video 1',
     type: TRACK_TYPES.MAIN,
     color: '#4a90e2',
-    height: 80,
+    height: 62,
     acceptsVideo: true,
     acceptsAudio: true,
   },
@@ -64,7 +64,7 @@ export const TRACK_CONFIG = [
     label: 'Video 2 (PiP)',
     type: TRACK_TYPES.OVERLAY,
     color: '#e67e22',
-    height: 80,
+    height: 62,
     acceptsVideo: true,
     acceptsAudio: false,
   },
@@ -73,7 +73,7 @@ export const TRACK_CONFIG = [
     label: 'Audio',
     type: TRACK_TYPES.AUDIO,
     color: '#2ecc71',
-    height: 60,
+    height: 52,
     acceptsVideo: false,
     acceptsAudio: true,
   },
@@ -81,10 +81,10 @@ export const TRACK_CONFIG = [
 
 // Default track heights
 export const TRACK_HEIGHTS = {
-  DEFAULT: 80,
-  AUDIO: 60,
+  DEFAULT: 62,
+  AUDIO: 52,
   MIN: 40,
-  MAX: 120,
+  MAX: 150,
 };
 
 // Overlay position presets for PiP

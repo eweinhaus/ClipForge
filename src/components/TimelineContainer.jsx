@@ -23,7 +23,7 @@ export default function TimelineContainer({
   onSplitClip,
   canSplitClip
 }) {
-  const timelineHeight = 200; // Fixed height - back to original
+  const timelineHeight = 280; // Fixed height - increased for taller tracks
   const [zoomLevel, setZoomLevel] = useState(() => {
     try {
       const saved = localStorage.getItem('clipforge.timelinePrefs');

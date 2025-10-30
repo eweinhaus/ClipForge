@@ -119,7 +119,17 @@ const VideoPreview = forwardRef(({ clip, onPlaybackChange, onClipEnded, shouldAu
   // Handle video events
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
-      setDuration(videoRef.current.duration || 0);
+      const videoDuration = videoRef.current.duration;
+      
+      // Check for invalid duration values (Infinity, NaN, or negative)
+      if (isFinite(videoDuration) && videoDuration > 0) {
+        setDuration(videoDuration);
+      } else {
+        // Fall back to clip duration if video duration is invalid
+        console.warn('[VideoPreview] Invalid video duration:', videoDuration, 'using clip duration:', clip.duration);
+        setDuration(clip.duration || 0);
+      }
+      
       setIsLoading(false);
     }
   };

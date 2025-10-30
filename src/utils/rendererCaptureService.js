@@ -330,14 +330,19 @@ async function startWebcamRecord() {
 }
 
 /**
- * Start composite recording (screen + webcam)
+ * Start composite recording (screen + webcam) with Picture-in-Picture overlay
  * @param {string} screenSourceId - ID of the screen/window to record
+ * @param {Object} pipSettings - PiP overlay settings
  * @returns {Promise<Object>} Recording data with composite stream and recorder
  */
-async function startCompositeRecord(screenSourceId) {
+async function startCompositeRecord(screenSourceId, pipSettings = {}) {
   try {
-    console.log('[RendererCaptureService] ============= STARTING COMPOSITE RECORDING =============');
+    console.log('[RendererCaptureService] ============= STARTING COMPOSITE RECORDING WITH PIP =============');
     console.log('[RendererCaptureService] Screen Source ID:', screenSourceId);
+    console.log('[RendererCaptureService] PiP Settings:', pipSettings);
+    
+    // Import video compositor
+    const { createCompositeStream, PIP_POSITIONS, PIP_SIZES } = require('./videoCompositor.js');
     
     // Get screen stream using modern API first (video only - audio causes NotSupportedError)
     console.log('[RendererCaptureService] STEP 1: Getting screen stream...');
@@ -445,18 +450,26 @@ async function startCompositeRecord(screenSourceId) {
 
     console.log('[RendererCaptureService] ✓ All streams obtained successfully');
 
-    // Simplified approach: Record screen video with webcam audio
-    // This avoids canvas compositing issues that cause corrupted files
-    console.log('[RendererCaptureService] STEP 4: Creating simplified composite stream...');
+    // Create composite stream with PiP overlay using canvas compositing
+    console.log('[RendererCaptureService] STEP 4: Creating PiP composite stream...');
     
-    // Use screen video as primary stream
-    const compositeStream = screenStream.clone();
+    // Default PiP settings
+    const defaultPipSettings = {
+      position: PIP_POSITIONS.BOTTOM_RIGHT,
+      size: PIP_SIZES.MEDIUM,
+      opacity: 0.9,
+      ...pipSettings
+    };
     
-    // Add webcam audio to the composite stream
-    webcamStream.getAudioTracks().forEach(track => {
-      compositeStream.addTrack(track);
-      console.log('[RendererCaptureService] Added webcam audio track to composite stream');
-    });
+    console.log('[RendererCaptureService] Using PiP settings:', defaultPipSettings);
+    
+    // Create the composite stream with canvas-based PiP overlay
+    const { stream: compositeStream, cleanup: cleanupCompositing } = createCompositeStream(
+      screenStream, 
+      webcamStream, 
+      defaultPipSettings,
+      RECORDING_FPS
+    );
 
     console.log('[RendererCaptureService] Composite stream details:', {
       id: compositeStream.id,
@@ -465,7 +478,7 @@ async function startCompositeRecord(screenSourceId) {
       audioTracks: compositeStream.getAudioTracks().length
     });
 
-    // Create MediaRecorder with simplified stream
+    // Create MediaRecorder with composite stream
     console.log('[RendererCaptureService] Creating MediaRecorder for composite...');
     let mimeType;
     const supportedTypes = [
@@ -503,7 +516,9 @@ async function startCompositeRecord(screenSourceId) {
       mimeType,
       screenStream,
       webcamStream,
-      microphoneStream
+      microphoneStream,
+      pipSettings: defaultPipSettings,
+      cleanupCompositing // Include cleanup function for proper resource management
     };
   } catch (error) {
     console.error('[RendererCaptureService] Error starting composite recording:', error);
@@ -612,6 +627,12 @@ async function stopRecording(recorder, chunks, outputPath, recordingData = {}) {
           
           // Clean up streams
           console.log('[RendererCaptureService] Cleaning up streams...');
+          
+          // Clean up compositing first (for PiP recordings)
+          if (recordingData.cleanupCompositing) {
+            console.log('[RendererCaptureService] Cleaning up compositing...');
+            recordingData.cleanupCompositing();
+          }
           
           if (recordingData.stream) {
             console.log('[RendererCaptureService] Stopping main stream tracks:', recordingData.stream.getTracks().length);

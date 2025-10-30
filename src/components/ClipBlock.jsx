@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, PictureInPicture } from 'lucide-react';
 import { formatDuration, ellipsize, formatTrimmedDuration } from '../utils/formatters';
 import { timeToPx, pxToTime, snap, validateTrimRange } from '../utils/timelineUtils';
 import { useThumbnailPreload } from '../hooks/useThumbnailPreload';
@@ -276,6 +276,13 @@ export default function ClipBlock({
         <div className="clip-duration-overlay">
           {formatTrimmedDuration(draftTrimStart, draftTrimEnd)}
         </div>
+
+        {/* PiP indicator for composite recordings */}
+        {clip.isComposite && (
+          <div className="clip-pip-indicator" title="Picture-in-Picture recording">
+            <PictureInPicture size={12} />
+          </div>
+        )}
 
         <button
           className="clip-delete"

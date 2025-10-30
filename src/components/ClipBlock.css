@@ -203,6 +203,30 @@
   border-top: 6px solid rgba(0, 0, 0, 0.9);
 }
 
+/* PiP indicator styles */
+.clip-pip-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #ffffff;
+  border-radius: 3px;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  z-index: 10;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.clip-pip-indicator svg {
+  width: 10px;
+  height: 10px;
+}
+
 /* Dark theme support */
 @media (prefers-color-scheme: dark) {
   .clip-filename-overlay {
@@ -222,6 +246,12 @@
   
   .hover-card-arrow {
     border-top-color: rgba(255, 255, 255, 0.95);
+  }
+  
+  .clip-pip-indicator {
+    background: rgba(255, 255, 255, 0.9);
+    color: #000000;
+    border: 1px solid rgba(0, 0, 0, 0.2);
   }
 }
 

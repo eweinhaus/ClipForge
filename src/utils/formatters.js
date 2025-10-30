@@ -4,7 +4,8 @@
  * @returns {string} Formatted time (MM:SS or H:MM:SS)
  */
 export function formatDuration(seconds) {
-  if (!seconds || seconds < 0) return '0:00';
+  // Handle invalid values (NaN, Infinity, negative, or falsy)
+  if (!seconds || !isFinite(seconds) || seconds < 0) return '0:00';
   
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);

@@ -49,6 +49,11 @@ function AppContent() {
   const [availableSources, setAvailableSources] = useState([]);
   const [recordingData, setRecordingData] = useState(null);
   const [recordingInterval, setRecordingInterval] = useState(null);
+  const [pipSettings, setPipSettings] = useState({
+    position: 'bottom-right',
+    size: 0.3,
+    opacity: 0.9
+  });
   
   const videoPreviewRef = useRef(null);
   
@@ -305,6 +310,20 @@ function AppContent() {
         : clip
     ));
     showToast('Clip trimmed', 'success');
+  };
+
+  /**
+   * Handle PiP settings changes for a composite clip
+   * @param {string} clipId - ID of clip to update
+   * @param {Object} pipSettings - New PiP settings
+   */
+  const handlePipSettingsChange = (clipId, pipSettings) => {
+    setClips(prev => prev.map(clip => 
+      clip.id === clipId 
+        ? { ...clip, pipSettings }
+        : clip
+    ));
+    showToast('PiP settings updated', 'success');
   };
 
   /**
@@ -610,7 +629,7 @@ function AppContent() {
         console.log('[App] *** ABOUT TO CALL startCompositeRecord() ***');
         
         try {
-          result = await startCompositeRecord(sourceToUse.id);
+          result = await startCompositeRecord(sourceToUse.id, pipSettings);
           console.log('[App] *** startCompositeRecord() RETURNED SUCCESSFULLY ***');
         } catch (compositeError) {
           console.error('[App] *** startCompositeRecord() THREW ERROR ***');
@@ -790,7 +809,12 @@ function AppContent() {
         track: recordingType === 'webcam' ? 'overlay' : 'main',
         hasAudio: true,
         audioVolume: 1.0,
-        isMuted: false
+        isMuted: false,
+        // Add PiP settings for composite recordings
+        ...(recordingType === 'screen+webcam' && {
+          pipSettings: pipSettings,
+          isComposite: true
+        })
       };
 
       setClips(prev => [...prev, newClip]);
@@ -951,6 +975,8 @@ function AppContent() {
             availableSources={availableSources}
             onSourceChange={handleSourceChange}
             recordingType={recordingType}
+            pipSettings={pipSettings}
+            onPipSettingsChange={setPipSettings}
           />
         </aside>
 
@@ -971,6 +997,7 @@ function AppContent() {
           <ClipEditor
             clip={clips.find(c => c.id === selectedClipId) || null}
             onTrimChange={handleTrimChange}
+            onPipSettingsChange={handlePipSettingsChange}
           />
         </main>
       </div>

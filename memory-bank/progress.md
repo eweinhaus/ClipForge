@@ -31,6 +31,9 @@ All 8 PRs have been successfully completed. The ClipForge MVP is feature-complet
 ### PR-5: Export Timeline to MP4 (COMPLETED)
 5.  **Export to MP4 (Core Loop Completion):** ✅ Successfully implemented comprehensive export functionality with mediaProcessor.js handling FFmpeg operations, segment extraction with normalization, filter_complex concatenation, progress reporting via IPC, ExportDialog component with file picker and progress bar, Cmd+E keyboard shortcut, and robust error handling. All acceptance criteria met including proper clip ordering, trim application, audio/video sync, and user-friendly error messages. **All manual tests passed successfully including multi-clip exports, progress reporting, and error cases.**
 
+### PR-5.1: Export Resolution Options (COMPLETED)
+5.1. **Export Resolution & Quality Options:** ✅ Successfully implemented comprehensive export resolution and quality options with ExportDialog UI enhancements (resolution dropdown: Source, 720p, 1080p, 480p; quality dropdown: High, Medium, Low), smart validation system that warns about upscaling low-resolution content, mediaProcessor.js extensions with resolution dimension calculations, bitrate mapping based on quality presets, FFmpeg scale filter generation with aspect ratio preservation, and comprehensive unit tests for all helper functions. All acceptance criteria met including proper aspect ratio handling, quality-based bitrate settings, user-friendly validation warnings, and seamless integration with existing export flow. **All implementation tasks completed successfully with comprehensive testing.**
+
 ### PR-6: Reorder Clips (Drag & Drop) (COMPLETED)
 6.  **Drag-and-drop Reordering:** ✅ Successfully implemented drag-and-drop reordering using @dnd-kit packages (modern React 19 compatible alternative to react-beautiful-dnd). Timeline component updated with DndContext and SortableContext, SortableClipItem component created with full drag support, handleReorderClips function implemented in App.jsx with proper order property updates, visual feedback added (opacity, box-shadow, cursor changes), and mediaProcessor verified to sort clips by order before export. **All implementation tasks completed successfully with no console errors or linting issues.**
 
@@ -40,7 +43,7 @@ All 8 PRs have been successfully completed. The ClipForge MVP is feature-complet
 ### PR-8: Testing, Packaging & Final Polish (COMPLETED)
 8.  **Documentation & Packaging:** ✅ Successfully completed final polish with comprehensive README documentation, MIT LICENSE file, and successful production build (`npm run make`). All console.log statements removed from source files. Updated tasks_MVP.md with completion status. App successfully packages to .zip format in out/make/zip/darwin/x64/. **MVP is complete and ready for production use.**
 
-## Current Status: MVP COMPLETE → HORIZONTAL TIMELINE COMPLETE → UI POLISHED 🎉
+## Current Status: MVP COMPLETE → HORIZONTAL TIMELINE COMPLETE → RECORDING FEATURE IN PROGRESS 🎉
 
 ### MVP Status: COMPLETE ✅
 *   **PR-1 Complete:** Solid foundation established
@@ -101,7 +104,69 @@ All 8 PRs have been successfully completed. The ClipForge MVP is feature-complet
 - **Performance:** All improvements maintain 60fps performance
 - **Testing:** All UI improvements tested and verified working correctly
 
+### SPLIT CLIPS FEATURE: COMPLETE ✅
+
+**Split Clips at Playhead Position** ✅ COMPLETED
+- **Status:** Implementation Complete ✅
+- **Components:**
+  * ✅ Split button added to TimelineControls with Scissors icon
+  * ✅ Split logic implemented in App.jsx (handleSplitClip function)
+  * ✅ Helper function added to timelineUtils.js (isPlayheadWithinClip)
+  * ✅ Keyboard shortcut 'S' added to useTimelineKeyboard hook
+  * ✅ HelpDialog updated with new shortcut documentation
+  * ✅ Unit tests written for isPlayheadWithinClip (13 test cases)
+- **Features Implemented:**
+  * ✅ Split clip at current playhead position
+  * ✅ Creates two clips with proper trim points maintained
+  * ✅ Preserves all clip properties (thumbnail, metadata, etc.)
+  * ✅ Automatic re-ordering of subsequent clips
+  * ✅ Visual continuity - no gaps between split clips (bug fixed)
+  * ✅ Button disabled when playhead not in valid position
+  * ✅ Keyboard shortcut (S key) for quick splitting
+  * ✅ Auto-selects second clip after split
+  * ✅ Success toast notification
+- **Bug Fixes:**
+  * ✅ Fixed visual gap issue between split clips in TrackArea.jsx
+  * ✅ Removed incorrect trimStart offset from clip positioning
+  * ✅ Clips now positioned sequentially without gaps
+- **Testing Status:**
+  * ✅ Manual testing completed - verified no gaps and correct behavior
+  * ✅ Unit tests passing for utility functions
+  * ✅ Export tested with split clips - works correctly
+
+### RECORDING FEATURE: IN PROGRESS 🎥
+
+**Screen & Webcam Recording** 🔄 IMPLEMENTATION COMPLETE (Staged for Commit)
+- **Status:** Implementation Complete, Testing Needed ✅
+- **Components:**
+  * ✅ RecordingPanel.jsx - UI controls for recording modes
+  * ✅ RecordingPanel.css - Professional styling matching FileImporter
+  * ✅ rendererCaptureService.js - Core recording logic (530+ lines)
+  * ✅ captureService.js - Main process source enumeration
+  * ✅ Updated App.jsx with recording state and handlers
+  * ✅ Updated main.js with recording IPC handlers
+  * ✅ Updated preload.js with recording API bridge
+- **Features Implemented:**
+  * ✅ Screen recording with source selection (entire screen or specific window)
+  * ✅ Webcam recording with audio
+  * ✅ Composite recording (screen + webcam simultaneously)
+  * ✅ Real-time duration display with elapsed timer
+  * ✅ Automatic codec selection (VP9 → VP8 → WebM → MP4)
+  * ✅ Microphone audio capture during screen recording
+  * ✅ Automatic stream cleanup on stop/error
+  * ✅ Permission handling for camera and screen recording
+  * ✅ Warning system to avoid recording ClipForge itself
+  * ✅ Automatic addition of recordings to timeline
+  * ✅ 5-minute recording timeout for safety
+  * ✅ Comprehensive error handling and logging
+- **Testing Status:**
+  * ⏳ Manual testing needed (screen, webcam, composite modes)
+  * ⏳ Permission handling verification needed
+  * ⏳ Production build testing needed
+  * ⏳ Codec compatibility testing needed
+
 ## Known Issues
 
 *   **Dev Mode FFmpeg:** Requires `brew install ffmpeg` for development (not needed for packaged app)
 *   **EGL Errors:** Normal macOS warnings, don't affect functionality
+*   **Recording Feature:** Implementation complete but untested - manual testing required before release

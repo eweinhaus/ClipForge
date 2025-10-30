@@ -1,25 +1,32 @@
 .track-area {
-  height: 100%;
   position: relative;
+  border-bottom: 1px solid #e9ecef;
+  flex-shrink: 0; /* Prevent tracks from shrinking */
+  min-width: 100%; /* Stretch to fill available width */
+}
+
+.track-area:last-child {
+  border-bottom: none;
 }
 
 .track {
-  height: 60px;
+  height: 100%;
   position: relative;
   background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  margin: 8px 0;
-  border-radius: 4px;
   transition: background-color 0.2s ease;
 }
 
-/* Alternating row colors */
-.track:nth-child(even) {
-  background: #ffffff;
+/* Track-specific styling */
+.track-area--main .track {
+  background: #f0f4ff;
 }
 
-.track:nth-child(odd) {
-  background: #f8f9fa;
+.track-area--overlay .track {
+  background: #fff5f0;
+}
+
+.track-area--audio .track {
+  background: #f0fff4;
 }
 
 /* Hover state for tracks */
@@ -27,19 +34,38 @@
   background: #e9ecef;
 }
 
+.track-area--main .track:hover {
+  background: #e3ebff;
+}
+
+.track-area--overlay .track:hover {
+  background: #ffe8dd;
+}
+
+.track-area--audio .track:hover {
+  background: #ddfce7;
+}
+
 /* Dark theme support */
 @media (prefers-color-scheme: dark) {
+  .track-area {
+    border-color: #2d3748;
+  }
+  
   .track {
     background: #2d3748;
-    border-color: #4a5568;
   }
   
-  .track:nth-child(even) {
-    background: #1a202c;
+  .track-area--main .track {
+    background: #1e2740;
   }
   
-  .track:nth-child(odd) {
-    background: #2d3748;
+  .track-area--overlay .track {
+    background: #2d2420;
+  }
+  
+  .track-area--audio .track {
+    background: #1e2d20;
   }
   
   .track:hover {

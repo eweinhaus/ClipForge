@@ -1,8 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Download, HelpCircle } from 'lucide-react';
 import { ToastProvider, useToast } from './utils/toastContext';
 import { generateUuid } from './utils/uuid';
 import { ERROR_MESSAGES } from './utils/constants';
+import { isPlayheadWithinClip } from './utils/timelineUtils';
+import { 
+  startScreenRecord, 
+  startWebcamRecord, 
+  startCompositeRecord, 
+  setupRecorderDataCollection,
+  stopRecording,
+  requestScreenPermission 
+} from './utils/rendererCaptureService';
 import FileImporter from './components/FileImporter';
 import TimelineContainer from './components/TimelineContainer';
 import TimelineErrorBoundary from './components/TimelineErrorBoundary';
@@ -11,6 +20,7 @@ import ClipEditor from './components/ClipEditor';
 import ExportDialog from './components/ExportDialog';
 import HelpDialog from './components/HelpDialog';
 import Notifications from './components/Notifications';
+import RecordingPanel from './components/RecordingPanel';
 import './styles/main.css';
 
 /**
@@ -30,6 +40,20 @@ function AppContent() {
   const [exportError, setExportError] = useState(null);
   
   const [showHelpDialog, setShowHelpDialog] = useState(false);
+  
+  // Recording state
+  const [recordingState, setRecordingState] = useState('idle');
+  const [recordingElapsedTime, setRecordingElapsedTime] = useState(0);
+  const [recordingType, setRecordingType] = useState(null);
+  const [selectedSource, setSelectedSource] = useState(null);
+  const [availableSources, setAvailableSources] = useState([]);
+  const [recordingData, setRecordingData] = useState(null);
+  const [recordingInterval, setRecordingInterval] = useState(null);
+  const [pipSettings, setPipSettings] = useState({
+    position: 'bottom-right',
+    size: 0.3,
+    opacity: 0.9
+  });
   
   const videoPreviewRef = useRef(null);
   
@@ -73,6 +97,33 @@ function AppContent() {
       window.electronAPI.removeAllListeners('export-progress');
     };
   }, []);
+
+  // Cleanup recording interval on unmount
+  useEffect(() => {
+    return () => {
+      if (recordingInterval) {
+        clearInterval(recordingInterval);
+      }
+    };
+  }, [recordingInterval]);
+
+  // Handle renderer crashes during recording
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (recordingState === 'recording') {
+        console.log('[App] Page unloading during recording - cleaning up');
+        if (recordingInterval) {
+          clearInterval(recordingInterval);
+        }
+        if (recordingData?.stream) {
+          recordingData.stream.getTracks().forEach(track => track.stop());
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [recordingState, recordingInterval, recordingData]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -262,6 +313,20 @@ function AppContent() {
   };
 
   /**
+   * Handle PiP settings changes for a composite clip
+   * @param {string} clipId - ID of clip to update
+   * @param {Object} pipSettings - New PiP settings
+   */
+  const handlePipSettingsChange = (clipId, pipSettings) => {
+    setClips(prev => prev.map(clip => 
+      clip.id === clipId 
+        ? { ...clip, pipSettings }
+        : clip
+    ));
+    showToast('PiP settings updated', 'success');
+  };
+
+  /**
    * Handle clip reordering via drag and drop
    * @param {number} oldIndex - Original index of the clip
    * @param {number} newIndex - New index for the clip
@@ -363,8 +428,9 @@ function AppContent() {
   /**
    * Handle export request
    * @param {string} outputPath - Path where to save the exported video
+   * @param {Object} options - Export options {resolution, quality}
    */
-  const handleExport = async (outputPath) => {
+  const handleExport = async (outputPath, options = {}) => {
     setIsExporting(true);
     setExportProgress(0);
     setExportError(null);
@@ -372,7 +438,8 @@ function AppContent() {
     try {
       const result = await window.electronAPI.exportTimeline({
         clips,
-        outputPath
+        outputPath,
+        options
       });
 
       if (result.success) {
@@ -405,6 +472,488 @@ function AppContent() {
     }
   };
 
+  /**
+   * Handle starting screen recording
+   * @param {string} type - Type of recording ('screen', 'webcam', 'screen+webcam')
+   */
+  const handleStartRecord = async (type) => {
+    try {
+      console.log('[App] ============= STARTING RECORDING FLOW =============');
+      console.log('[App] Recording type requested:', type);
+      console.log('[App] Current state:', {
+        recordingState,
+        selectedSource,
+        availableSources: availableSources.length
+      });
+      
+      // Test permissions first
+      console.log('[App] Testing screen permissions...');
+      const permissionResult = await window.electronAPI.testScreenPermissions();
+      console.log('[App] Permission test result:', permissionResult);
+      
+      if (!permissionResult.success || !permissionResult.data) {
+        console.log('[App] Requesting screen permission...');
+        const granted = await requestScreenPermission();
+        console.log('[App] Permission request result:', granted);
+        
+        if (!granted) {
+          console.error('[App] Permission denied by user');
+          showToast('Screen recording permission denied. Please enable in System Preferences > Security & Privacy > Screen Recording.', 'error', 8000);
+          return;
+        }
+      }
+
+      // Store the selected source in a local variable for immediate use
+      let sourceToUseForRecording = selectedSource;
+      
+      // Get available sources for screen recording
+      if (type === 'screen' || type === 'screen+webcam') {
+        console.log('[App] Getting available screen sources...');
+        const sourcesResult = await window.electronAPI.getSources();
+        console.log('[App] Sources result:', {
+          success: sourcesResult.success,
+          count: sourcesResult.data?.length || 0
+        });
+        
+        if (!sourcesResult.success) {
+          console.error('[App] Failed to get sources:', sourcesResult.error);
+          showToast(`Failed to get screen sources: ${sourcesResult.error.message}`, 'error');
+          return;
+        }
+        
+        setAvailableSources(sourcesResult.data);
+        
+        // For screen recording, we need a source selection
+        if (type === 'screen' && sourcesResult.data.length > 0) {
+          // Auto-select first non-ClipForge source
+          const nonClipForgeSources = sourcesResult.data.filter(source => 
+            !source.name.toLowerCase().includes('clipforge') && 
+            !source.name.toLowerCase().includes('electron')
+          );
+          
+          const sourceToSelect = nonClipForgeSources.length > 0 
+            ? nonClipForgeSources[0] 
+            : sourcesResult.data[0];
+          
+          console.log('[App] Auto-selecting source:', sourceToSelect.name);
+          setSelectedSource(sourceToSelect);
+          sourceToUseForRecording = sourceToSelect; // Use this immediately
+          
+          // Warn if user might be trying to record ClipForge itself
+          const clipForgeWindow = sourcesResult.data.find(source => 
+            source.name.toLowerCase().includes('clipforge') || 
+            source.name.toLowerCase().includes('electron')
+          );
+          
+          if (clipForgeWindow && sourceToSelect.id === clipForgeWindow.id) {
+            console.warn('[App] Warning: Selected source appears to be ClipForge itself');
+            showToast('⚠️ Recording ClipForge itself may cause issues. Try recording a different window or screen.', 'warning', 6000);
+          }
+        } else if ((type === 'screen+webcam') && sourcesResult.data.length > 0) {
+          // For composite, also auto-select if not already selected
+          if (!sourceToUseForRecording) {
+            const nonClipForgeSources = sourcesResult.data.filter(source => 
+              !source.name.toLowerCase().includes('clipforge') && 
+              !source.name.toLowerCase().includes('electron')
+            );
+            
+            const sourceToSelect = nonClipForgeSources.length > 0 
+              ? nonClipForgeSources[0] 
+              : sourcesResult.data[0];
+            
+            console.log('[App] Auto-selecting source for composite:', sourceToSelect.name);
+            setSelectedSource(sourceToSelect);
+            sourceToUseForRecording = sourceToSelect;
+          }
+        }
+      }
+
+      console.log('[App] Setting recording state...');
+      setRecordingState('recording');
+      setRecordingType(type);
+      setRecordingElapsedTime(0);
+
+      // Start recording based on type using renderer capture service
+      console.log('[App] ========================================================');
+      console.log('[App] STEP 5: Calling renderer capture service...');
+      console.log('[App] Recording type:', type);
+      
+      let result;
+      if (type === 'screen') {
+        // Use the source we just selected (from local variable)
+        const sourceToUse = sourceToUseForRecording || availableSources[0];
+        if (!sourceToUse) {
+          console.error('[App] No source available for recording');
+          console.error('[App] sourceToUseForRecording:', sourceToUseForRecording);
+          console.error('[App] availableSources:', availableSources);
+          showToast('Please select a screen or window to record', 'warning');
+          setRecordingState('idle');
+          return;
+        }
+        console.log('[App] STEP 5a: Starting SCREEN recording...');
+        console.log('[App] Source ID:', sourceToUse.id);
+        console.log('[App] Source name:', sourceToUse.name);
+        console.log('[App] *** ABOUT TO CALL startScreenRecord() ***');
+        
+        try {
+          result = await startScreenRecord(sourceToUse.id);
+          console.log('[App] *** startScreenRecord() RETURNED SUCCESSFULLY ***');
+        } catch (screenError) {
+          console.error('[App] *** startScreenRecord() THREW ERROR ***');
+          throw screenError;
+        }
+      } else if (type === 'webcam') {
+        console.log('[App] STEP 5b: Starting WEBCAM recording...');
+        console.log('[App] *** ABOUT TO CALL startWebcamRecord() ***');
+        
+        try {
+          result = await startWebcamRecord();
+          console.log('[App] *** startWebcamRecord() RETURNED SUCCESSFULLY ***');
+        } catch (webcamError) {
+          console.error('[App] *** startWebcamRecord() THREW ERROR ***');
+          throw webcamError;
+        }
+      } else if (type === 'screen+webcam') {
+        const sourceToUse = sourceToUseForRecording || availableSources[0];
+        if (!sourceToUse) {
+          console.error('[App] No source available for composite recording');
+          console.error('[App] sourceToUseForRecording:', sourceToUseForRecording);
+          console.error('[App] availableSources:', availableSources);
+          showToast('Please select a screen or window to record', 'warning');
+          setRecordingState('idle');
+          return;
+        }
+        console.log('[App] STEP 5c: Starting COMPOSITE recording...');
+        console.log('[App] Source ID:', sourceToUse.id);
+        console.log('[App] Source name:', sourceToUse.name);
+        console.log('[App] *** ABOUT TO CALL startCompositeRecord() ***');
+        
+        try {
+          result = await startCompositeRecord(sourceToUse.id, pipSettings);
+          console.log('[App] *** startCompositeRecord() RETURNED SUCCESSFULLY ***');
+        } catch (compositeError) {
+          console.error('[App] *** startCompositeRecord() THREW ERROR ***');
+          throw compositeError;
+        }
+      }
+      
+      console.log('[App] ========================================================');
+
+      console.log('[App] ✓ Capture service returned successfully');
+      console.log('[App] Result:', {
+        hasRecorder: !!result.recorder,
+        hasStream: !!result.stream,
+        mimeType: result.mimeType,
+        recorderState: result.recorder?.state
+      });
+
+      // Setup data collection BEFORE starting the recorder
+      console.log('[App] Setting up recorder data collection...');
+      const chunks = setupRecorderDataCollection(result.recorder);
+      console.log('[App] ✓ Data collection setup complete');
+
+      // Start the MediaRecorder
+      console.log('[App] Starting MediaRecorder...');
+      try {
+        result.recorder.start(1000); // Start recording with 1-second chunks
+        console.log('[App] ✓ MediaRecorder.start() called successfully');
+        console.log('[App] MediaRecorder state after start:', result.recorder.state);
+      } catch (startError) {
+        console.error('[App] ✗ MediaRecorder.start() failed:', {
+          name: startError.name,
+          message: startError.message,
+          stack: startError.stack
+        });
+        throw new Error(`Failed to start MediaRecorder: ${startError.message}`);
+      }
+
+      // Add timeout to prevent hanging
+      const recordingTimeout = setTimeout(() => {
+        console.warn('[App] Recording timeout - stopping recording');
+        handleStopRecord();
+      }, 300000); // 5 minute timeout
+
+      // Store recording data with timeout and chunks
+      setRecordingData({ ...result, timeout: recordingTimeout, chunks });
+
+      // Start elapsed time timer
+      const startTime = Date.now();
+      const interval = setInterval(() => {
+        setRecordingElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+      }, 100);
+      setRecordingInterval(interval);
+
+      console.log('[App] ✓ Recording started successfully');
+      console.log('[App] ============= RECORDING FLOW COMPLETE =============');
+      showToast(`Started ${type} recording`, 'success');
+    } catch (err) {
+      console.error('[App] ✗ Recording start error:', {
+        name: err.name,
+        message: err.message,
+        stack: err.stack
+      });
+      console.log('[App] ============= RECORDING FLOW FAILED =============');
+      showToast(`Recording failed: ${err.message}`, 'error', 8000);
+      setRecordingState('idle');
+      setRecordingType(null);
+    }
+  };
+
+  /**
+   * Handle stopping recording
+   */
+  const handleStopRecord = async () => {
+    try {
+      console.log('[App] Stopping recording...');
+      
+      if (!recordingData) {
+        showToast('No active recording to stop', 'warning');
+        return;
+      }
+
+      // Show immediate feedback
+      showToast('Stopping recording...', 'info');
+
+      // Clear elapsed time timer
+      if (recordingInterval) {
+        clearInterval(recordingInterval);
+        setRecordingInterval(null);
+      }
+
+      // Clear recording timeout
+      if (recordingData.timeout) {
+        clearTimeout(recordingData.timeout);
+      }
+
+      // Clean up all streams immediately to stop webcam/camera
+      console.log('[App] Cleaning up recording streams...');
+      if (recordingData.stream) {
+        console.log('[App] Stopping main stream tracks:', recordingData.stream.getTracks().length);
+        recordingData.stream.getTracks().forEach(track => {
+          console.log('[App] Stopping track:', track.kind, track.label);
+          track.stop();
+        });
+      }
+      if (recordingData.screenStream) {
+        console.log('[App] Stopping screen stream tracks:', recordingData.screenStream.getTracks().length);
+        recordingData.screenStream.getTracks().forEach(track => {
+          console.log('[App] Stopping screen track:', track.kind, track.label);
+          track.stop();
+        });
+      }
+      if (recordingData.webcamStream) {
+        console.log('[App] Stopping webcam stream tracks:', recordingData.webcamStream.getTracks().length);
+        recordingData.webcamStream.getTracks().forEach(track => {
+          console.log('[App] Stopping webcam track:', track.kind, track.label);
+          track.stop();
+        });
+      }
+      if (recordingData.microphoneStream) {
+        console.log('[App] Stopping microphone stream tracks:', recordingData.microphoneStream.getTracks().length);
+        recordingData.microphoneStream.getTracks().forEach(track => {
+          console.log('[App] Stopping microphone track:', track.kind, track.label);
+          track.stop();
+        });
+      }
+      if (recordingData.audioStream) {
+        console.log('[App] Stopping audio stream tracks:', recordingData.audioStream.getTracks().length);
+        recordingData.audioStream.getTracks().forEach(track => {
+          console.log('[App] Stopping audio track:', track.kind, track.label);
+          track.stop();
+        });
+      }
+      console.log('[App] ✓ All recording streams stopped');
+
+      // Generate output path
+      const timestamp = Date.now();
+      const fileName = `${recordingType}_${timestamp}.webm`;
+      const homeDirResult = await window.electronAPI.getHomeDir();
+      const homeDir = homeDirResult.success ? homeDirResult.data : '/Users/ethan/Desktop';
+      const outputPath = `${homeDir}/Desktop/${fileName}`;
+
+      console.log('[App] Output path:', outputPath);
+      console.log('[App] Chunks collected during recording:', recordingData.chunks?.length || 0);
+
+      // Stop recording using renderer capture service
+      const metadata = await stopRecording(
+        recordingData.recorder, 
+        recordingData.chunks || [], 
+        outputPath, 
+        {
+          duration: recordingElapsedTime,
+          width: recordingType === 'webcam' ? 1280 : 1920,
+          height: recordingType === 'webcam' ? 720 : 1080,
+          stream: recordingData.stream,
+          screenStream: recordingData.screenStream,
+          webcamStream: recordingData.webcamStream,
+          microphoneStream: recordingData.microphoneStream,
+          audioStream: recordingData.audioStream
+        }
+      );
+
+      console.log('[App] Recording metadata:', metadata);
+
+      // Create clip object and add to timeline
+      // Track assignment logic:
+      // - 'webcam' recordings -> overlay track (for PiP)
+      // - 'screen+webcam' recordings -> overlay track (composite PiP)
+      // - 'screen' recordings -> main track (full screen)
+      const assignedTrack = (recordingType === 'webcam' || recordingType === 'screen+webcam') ? 'overlay' : 'main';
+      
+      const newClip = {
+        id: generateUuid(),
+        fileName: fileName,
+        filePath: metadata.filePath,
+        source: recordingType,
+        duration: metadata.duration,
+        width: metadata.width,
+        height: metadata.height,
+        thumbnail: metadata.thumbnail,
+        trimStart: 0,
+        trimEnd: metadata.duration,
+        order: clips.length,
+        track: assignedTrack,
+        hasAudio: true,
+        audioVolume: 1.0,
+        isMuted: false,
+        // Add PiP settings for composite recordings
+        ...(recordingType === 'screen+webcam' && {
+          pipSettings: pipSettings,
+          isComposite: true
+        })
+      };
+
+      setClips(prev => [...prev, newClip]);
+      setRecordingState('idle');
+      setRecordingType(null);
+      setRecordingData(null);
+      setRecordingElapsedTime(0);
+      setSelectedSource(null);
+
+      showToast(`✓ ${recordingType} recording added to timeline`, 'success');
+    } catch (err) {
+      console.error('[App] Stop recording error:', err);
+      
+      // Clean up streams even on error to stop webcam/camera
+      console.log('[App] Cleaning up streams after error...');
+      if (recordingData) {
+        if (recordingData.stream) {
+          recordingData.stream.getTracks().forEach(track => track.stop());
+        }
+        if (recordingData.screenStream) {
+          recordingData.screenStream.getTracks().forEach(track => track.stop());
+        }
+        if (recordingData.webcamStream) {
+          recordingData.webcamStream.getTracks().forEach(track => track.stop());
+        }
+        if (recordingData.microphoneStream) {
+          recordingData.microphoneStream.getTracks().forEach(track => track.stop());
+        }
+        if (recordingData.audioStream) {
+          recordingData.audioStream.getTracks().forEach(track => track.stop());
+        }
+        console.log('[App] ✓ Streams cleaned up after error');
+      }
+      
+      showToast(`Stop recording failed: ${err.message}`, 'error');
+      setRecordingState('idle');
+      setRecordingType(null);
+      setRecordingData(null);
+      setRecordingElapsedTime(0);
+      setSelectedSource(null);
+    }
+  };
+
+  /**
+   * Handle source selection change
+   * @param {Object} source - Selected source object
+   */
+  const handleSourceChange = (source) => {
+    setSelectedSource(source);
+  };
+
+  /**
+   * Handle splitting clip at playhead position
+   */
+  const handleSplitClip = () => {
+    if (!selectedClipId || clips.length === 0) return;
+
+    const clip = clips.find(c => c.id === selectedClipId);
+    if (!clip) return;
+
+    // Verify playhead is within the clip
+    if (!isPlayheadWithinClip(currentPlaybackTime, clip, clips)) {
+      showToast('Playhead must be within the clip to split', 'warning');
+      return;
+    }
+
+    // Calculate the clip's start position in the timeline
+    let timelinePosition = 0;
+    const clipIndex = clips.findIndex(c => c.id === clip.id);
+    
+    for (let i = 0; i < clipIndex; i++) {
+      const prevClip = clips[i];
+      const trimmedDuration = (prevClip.trimEnd || prevClip.duration || 0) - (prevClip.trimStart || 0);
+      timelinePosition += trimmedDuration;
+    }
+
+    // Calculate split time relative to the original video file
+    const timeIntoClip = currentPlaybackTime - timelinePosition;
+    const splitTime = (clip.trimStart || 0) + timeIntoClip;
+
+    // Safety check: ensure split time is within trim range
+    if (splitTime <= (clip.trimStart || 0) || splitTime >= (clip.trimEnd || clip.duration)) {
+      showToast('Cannot split at clip edges', 'warning');
+      return;
+    }
+
+    // Create first clip (from start to split point)
+    const firstClip = {
+      ...clip,
+      id: generateUuid(),
+      trimEnd: splitTime,
+      order: clip.order
+    };
+
+    // Create second clip (from split point to end)
+    const secondClip = {
+      ...clip,
+      id: generateUuid(),
+      trimStart: splitTime,
+      order: clip.order + 1
+    };
+
+    // Remove original clip and insert both new clips
+    // Update order property for all subsequent clips
+    const updatedClips = clips
+      .filter(c => c.id !== clip.id)
+      .map(c => {
+        if (c.order > clip.order) {
+          return { ...c, order: c.order + 1 };
+        }
+        return c;
+      });
+
+    // Add the two new clips and sort by order
+    const newClips = [...updatedClips, firstClip, secondClip].sort((a, b) => a.order - b.order);
+    
+    setClips(newClips);
+    setSelectedClipId(secondClip.id); // Select the second part
+    showToast('Clip split successfully', 'success');
+  };
+
+  /**
+   * Check if the current playhead position allows splitting
+   */
+  const canSplitClip = useMemo(() => {
+    if (!selectedClipId || clips.length === 0) return false;
+    
+    const clip = clips.find(c => c.id === selectedClipId);
+    if (!clip) return false;
+    
+    return isPlayheadWithinClip(currentPlaybackTime, clip, clips);
+  }, [selectedClipId, currentPlaybackTime, clips]);
+
   return (
     <div className="app-container">
       {/* Help Button (Top Right) */}
@@ -423,26 +972,45 @@ function AppContent() {
             onImportFiles={handleImportFiles} 
             isLoading={isImporting} 
           />
+          <RecordingPanel
+            recordingState={recordingState}
+            recordingDuration={recordingElapsedTime}
+            onStartRecord={handleStartRecord}
+            onStopRecord={handleStopRecord}
+            selectedSource={selectedSource}
+            availableSources={availableSources}
+            onSourceChange={handleSourceChange}
+            recordingType={recordingType}
+            pipSettings={pipSettings}
+            onPipSettingsChange={setPipSettings}
+          />
         </aside>
 
         <main className="preview-panel">
-          <VideoPreview
-            ref={videoPreviewRef}
-            clip={clips.find(c => c.id === selectedClipId) || null}
-            onPlaybackChange={(timeInClip) => {
-              if (selectedClipId) {
-                const timelinePosition = calculateTimelinePosition(selectedClipId, timeInClip);
-                setCurrentPlaybackTime(timelinePosition);
-              }
-            }}
-            onClipEnded={handleClipEnded}
-            shouldAutoPlay={shouldAutoPlay}
-            onAutoPlayStarted={() => setShouldAutoPlay(false)}
-          />
-          <ClipEditor
-            clip={clips.find(c => c.id === selectedClipId) || null}
-            onTrimChange={handleTrimChange}
-          />
+          <div className="preview-content">
+            <div className="video-preview-main">
+              <VideoPreview
+                ref={videoPreviewRef}
+                clip={clips.find(c => c.id === selectedClipId) || null}
+                onPlaybackChange={(timeInClip) => {
+                  if (selectedClipId) {
+                    const timelinePosition = calculateTimelinePosition(selectedClipId, timeInClip);
+                    setCurrentPlaybackTime(timelinePosition);
+                  }
+                }}
+                onClipEnded={handleClipEnded}
+                shouldAutoPlay={shouldAutoPlay}
+                onAutoPlayStarted={() => setShouldAutoPlay(false)}
+              />
+            </div>
+            <div className="clip-editor-sidebar">
+              <ClipEditor
+                clip={clips.find(c => c.id === selectedClipId) || null}
+                onTrimChange={handleTrimChange}
+                onPipSettingsChange={handlePipSettingsChange}
+              />
+            </div>
+          </div>
         </main>
       </div>
 
@@ -460,6 +1028,8 @@ function AppContent() {
           onTrimChange={handleTrimChange}
           onExport={() => setShowExportDialog(true)}
           isExporting={isExporting}
+          onSplitClip={handleSplitClip}
+          canSplitClip={canSplitClip}
         />
       </TimelineErrorBoundary>
 

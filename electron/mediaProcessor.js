@@ -37,9 +37,11 @@ function timeout(ms) {
  * @param {Object} clip - Clip object with filePath, trimStart, trimEnd
  * @param {string} outputPath - Path for the trimmed segment
  * @param {Object} targetResolution - Target resolution {width, height}
+ * @param {Object} bitrateSettings - Bitrate settings {videoBitrate, maxRate, bufferSize}
+ * @param {Function} onProgress - Progress callback
  * @returns {Promise<void>}
  */
-async function extractTrimmedSegment(clip, outputPath, targetResolution, onProgress) {
+async function extractTrimmedSegment(clip, outputPath, targetResolution, bitrateSettings, onProgress) {
   return new Promise((resolve, reject) => {
     const trimDuration = clip.trimEnd - clip.trimStart;
     let lastProgress = 0;
@@ -75,14 +77,21 @@ async function extractTrimmedSegment(clip, outputPath, targetResolution, onProgr
       // Video filter: scale + pad + reset PTS to start at 0
       .outputOptions([
         '-vf', 
-        `scale=${targetResolution.width}:${targetResolution.height}:force_original_aspect_ratio=decrease,pad=${targetResolution.width}:${targetResolution.height}:(ow-iw)/2:(oh-ih)/2,setpts=PTS-STARTPTS`
+        generateScaleFilter(targetResolution) + ',setpts=PTS-STARTPTS'
       ])
       // Audio filter: reset PTS to start at 0 and ensure sync
       .outputOptions(['-af', 'asetpts=PTS-STARTPTS'])
-      // Video encoding
-      .outputOptions(['-c:v', 'libx264', '-preset', 'fast', '-crf', '23'])
-      // Audio: use PCM (no encoder delay) to avoid priming/gaps between segments
+      // Video encoding with bitrate settings
+      .outputOptions([
+        '-c:v', 'libx264', 
+        '-preset', 'fast', 
+        '-b:v', `${bitrateSettings.videoBitrate}k`,
+        '-maxrate', `${bitrateSettings.maxRate}k`,
+        '-bufsize', `${bitrateSettings.bufferSize}k`
+      ])
+      // Audio: use PCM with fade-in to prevent startup artifacts
       .outputOptions(['-c:a', 'pcm_s16le', '-ar', '48000', '-ac', '2'])
+      .outputOptions(['-af', 'afade=t=in:st=0:d=0.1,asetpts=PTS-STARTPTS'])
       // Force constant frame rate at 30fps
       .outputOptions(['-r', '30', '-vsync', 'cfr'])
       // Generate proper timestamps and fix any A/V sync issues
@@ -100,10 +109,11 @@ async function extractTrimmedSegment(clip, outputPath, targetResolution, onProgr
  * This approach is more robust than concat demuxer for segments with different properties
  * @param {string[]} segmentPaths - Array of segment file paths
  * @param {string} outputPath - Final output path
+ * @param {Object} bitrateSettings - Bitrate settings {videoBitrate, maxRate, bufferSize}
  * @param {Function} onProgress - Progress callback
  * @returns {Promise<void>}
  */
-async function concatenateSegments(segmentPaths, outputPath, onProgress) {
+async function concatenateSegments(segmentPaths, outputPath, bitrateSettings, onProgress) {
   return new Promise((resolve, reject) => {
     let lastProgress = 0;
     
@@ -153,9 +163,16 @@ async function concatenateSegments(segmentPaths, outputPath, onProgress) {
       .complexFilter(filterComplex)
       // Map concatenated outputs
       .outputOptions(['-map', '[vcat]', '-map', '[acat]'])
-      // Final encode: h264 + AAC (one-time encoding, avoids AAC priming between clips)
-      .outputOptions(['-c:v', 'libx264', '-preset', 'fast', '-crf', '23'])
-      .outputOptions(['-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2'])
+      // Final encode: h264 + AAC with bitrate settings
+      .outputOptions([
+        '-c:v', 'libx264', 
+        '-preset', 'fast', 
+        '-b:v', `${bitrateSettings.videoBitrate}k`,
+        '-maxrate', `${bitrateSettings.maxRate}k`,
+        '-bufsize', `${bitrateSettings.bufferSize}k`
+      ])
+      .outputOptions(['-c:a', 'aac', '-b:a', `${bitrateSettings.audioBitrate}k`, '-ar', '48000', '-ac', '2', '-aac_coder', 'twoloop'])
+      .outputOptions(['-af', 'afade=t=out:st=-0.1:d=0.1'])
       .outputOptions(['-r', '30'])
       // Ensure proper timing and avoid any PTS issues
       .outputOptions(['-fflags', '+genpts', '-async', '1'])
@@ -182,33 +199,344 @@ function cleanupTempFiles(tempFiles) {
 }
 
 /**
+ * Get resolution dimensions for a given resolution preset
+ * @param {string} resolution - Resolution preset ('source', '720p', '1080p', '480p')
+ * @returns {Object} Resolution dimensions {width, height}
+ */
+function getResolutionDimensions(resolution) {
+  switch (resolution) {
+    case '720p': return { width: 1280, height: 720 };
+    case '1080p': return { width: 1920, height: 1080 };
+    case '480p': return { width: 854, height: 480 };
+    case 'source': return null; // Will be determined from clips
+    default: return null;
+  }
+}
+
+/**
+ * Get bitrate settings for a given resolution and quality
+ * @param {string} resolution - Resolution preset
+ * @param {string} quality - Quality preset ('high', 'medium', 'low')
+ * @returns {Object} Bitrate settings {videoBitrate, maxRate, bufferSize}
+ */
+function getBitrateSettings(resolution, quality, audioQuality = 'high') {
+  const qualityMultipliers = {
+    high: 1.0,
+    medium: 0.7,
+    low: 0.5
+  };
+  
+  const multiplier = qualityMultipliers[quality] || 1.0;
+  
+  // Base bitrates for different resolutions
+  const baseBitrates = {
+    '480p': { video: 2000, maxRate: 2500, bufferSize: 5000 },
+    '720p': { video: 5000, maxRate: 6250, bufferSize: 12500 },
+    '1080p': { video: 8000, maxRate: 10000, bufferSize: 20000 },
+    'source': { video: 5000, maxRate: 6250, bufferSize: 12500 } // Default fallback
+  };
+  
+  const base = baseBitrates[resolution] || baseBitrates['source'];
+  
+  // Audio bitrate settings
+  const audioBitrates = {
+    high: 320,
+    medium: 192,
+    low: 128
+  };
+  
+  return {
+    videoBitrate: Math.round(base.video * multiplier),
+    maxRate: Math.round(base.maxRate * multiplier),
+    bufferSize: Math.round(base.bufferSize * multiplier),
+    audioBitrate: audioBitrates[audioQuality] || audioBitrates.high
+  };
+}
+
+/**
+ * Generate FFmpeg scale filter for resolution conversion
+ * @param {Object} targetResolution - Target resolution {width, height}
+ * @returns {string} FFmpeg scale filter string
+ */
+function generateScaleFilter(targetResolution) {
+  if (!targetResolution) return null;
+  
+  const { width, height } = targetResolution;
+  return `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`;
+}
+
+/**
+ * Concatenate segments with multi-track support using filter_complex
+ * @param {Object} trackSegments - Segment paths grouped by track {main: [], overlay: [], audio: []}
+ * @param {string} outputPath - Final output path
+ * @param {Object} bitrateSettings - Bitrate settings {videoBitrate, maxRate, bufferSize}
+ * @param {Function} onProgress - Progress callback
+ * @returns {Promise<void>}
+ */
+async function concatenateMultiTrackSegments(trackSegments, outputPath, bitrateSettings, onProgress) {
+  return new Promise((resolve, reject) => {
+    let lastProgress = 0;
+    
+    const { main = [], overlay = [], audio = [] } = trackSegments;
+    
+    // Build filter_complex for multi-track compositing
+    const filters = [];
+    let inputIndex = 0;
+    
+    // Input indices for each track
+    const mainStartIndex = inputIndex;
+    inputIndex += main.length;
+    const overlayStartIndex = inputIndex;
+    inputIndex += overlay.length;
+    const audioStartIndex = inputIndex;
+    
+    // Step 1: Concatenate main track clips
+    let mainVideoLabel = '[vmain]';
+    let mainAudioLabel = '[amain]';
+    
+    if (main.length > 1) {
+      const mainConcat = main.map((_, i) => `[${mainStartIndex + i}:v][${mainStartIndex + i}:a]`).join('') +
+        `concat=n=${main.length}:v=1:a=1${mainVideoLabel}${mainAudioLabel}`;
+      filters.push(mainConcat);
+    } else if (main.length === 1) {
+      mainVideoLabel = `[${mainStartIndex}:v]`;
+      mainAudioLabel = `[${mainStartIndex}:a]`;
+    }
+    
+    // Step 2: Concatenate overlay track clips if present
+    let overlayVideoLabel = null;
+    if (overlay.length > 1) {
+      overlayVideoLabel = '[voverlay]';
+      const overlayConcat = overlay.map((_, i) => `[${overlayStartIndex + i}:v]`).join('') +
+        `concat=n=${overlay.length}:v=1:a=0${overlayVideoLabel}`;
+      filters.push(overlayConcat);
+    } else if (overlay.length === 1) {
+      overlayVideoLabel = `[${overlayStartIndex}:v]`;
+    }
+    
+    // Step 3: Concatenate audio track clips if present
+    let audioLabel = null;
+    if (audio.length > 1) {
+      audioLabel = '[aaudio]';
+      const audioConcat = audio.map((_, i) => `[${audioStartIndex + i}:a]`).join('') +
+        `concat=n=${audio.length}:v=0:a=1${audioLabel}`;
+      filters.push(audioConcat);
+    } else if (audio.length === 1) {
+      audioLabel = `[${audioStartIndex}:a]`;
+    }
+    
+    // Step 4: Apply overlay compositing if overlay track exists
+    let finalVideoLabel = mainVideoLabel;
+    if (overlayVideoLabel) {
+      finalVideoLabel = '[vout]';
+      // Scale overlay to 25% and position at bottom-right with 20px margin
+      filters.push(`${overlayVideoLabel}scale=iw*0.25:ih*0.25[voverlay_scaled]`);
+      filters.push(`${mainVideoLabel}[voverlay_scaled]overlay=W-w-20:H-h-20${finalVideoLabel}`);
+    }
+    
+    // Step 5: Mix audio tracks if audio track exists
+    let finalAudioLabel = mainAudioLabel;
+    if (audioLabel) {
+      finalAudioLabel = '[aout]';
+      filters.push(`${mainAudioLabel}${audioLabel}amix=inputs=2:duration=longest${finalAudioLabel}`);
+    }
+    
+    const filterComplex = filters.join(';');
+    
+    console.log('[Export] Multi-track filter_complex:', filterComplex);
+    console.log('[Export] Segments:', { main: main.length, overlay: overlay.length, audio: audio.length });
+    
+    let ffmpegCmd = ffmpeg();
+    
+    // Add all segment inputs (main, then overlay, then audio)
+    [...main, ...overlay, ...audio].forEach(segmentPath => {
+      ffmpegCmd = ffmpegCmd.input(segmentPath);
+    });
+    
+    ffmpegCmd
+      .on('start', (cmdLine) => {
+        console.log('[Export] Multi-track concat command:', cmdLine);
+        onProgress(0);
+      })
+      .on('stderr', (line) => {
+        console.debug('[Export][concat stderr]', line.trim());
+      })
+      .on('progress', (progress) => {
+        const percent = Math.min(Math.round(progress.percent || 0), 100);
+        if (percent > lastProgress + 2) {
+          lastProgress = percent;
+          onProgress(percent);
+        }
+      })
+      .on('end', () => {
+        console.log('[Export] Multi-track concatenation complete');
+        onProgress(100);
+        resolve();
+      })
+      .on('error', (err) => {
+        console.error('[Export] Multi-track concatenation failed:', err.message);
+        reject(err);
+      })
+      .complexFilter(filterComplex)
+      // Map final outputs
+      .outputOptions(['-map', finalVideoLabel, '-map', finalAudioLabel])
+      // Final encode: h264 + AAC with bitrate settings
+      .outputOptions([
+        '-c:v', 'libx264', 
+        '-preset', 'fast', 
+        '-b:v', `${bitrateSettings.videoBitrate}k`,
+        '-maxrate', `${bitrateSettings.maxRate}k`,
+        '-bufsize', `${bitrateSettings.bufferSize}k`
+      ])
+      .outputOptions(['-c:a', 'aac', '-b:a', `${bitrateSettings.audioBitrate}k`, '-ar', '48000', '-ac', '2', '-aac_coder', 'twoloop'])
+      .outputOptions(['-af', 'afade=t=out:st=-0.1:d=0.1'])
+      .outputOptions(['-r', '30'])
+      .outputOptions(['-fflags', '+genpts', '-async', '1'])
+      .output(outputPath)
+      .run();
+  });
+}
+
+/**
+ * Build FFmpeg filter_complex for multi-track compositing
+ * @param {Object} trackGroups - Clips grouped by track {main: [], overlay: [], audio: []}
+ * @param {number} segmentCount - Number of segments per track
+ * @param {Object} targetResolution - Target resolution {width, height}
+ * @returns {string} FFmpeg filter_complex string
+ */
+function buildMultiTrackFilterComplex(trackGroups, segmentCount, targetResolution) {
+  const { main = [], overlay = [], audio = [] } = trackGroups;
+  const filters = [];
+  
+  // Input indices
+  let inputIndex = 0;
+  const mainStartIndex = inputIndex;
+  inputIndex += main.length;
+  const overlayStartIndex = inputIndex;
+  inputIndex += overlay.length;
+  const audioStartIndex = inputIndex;
+  
+  // Step 1: Concatenate main track clips if multiple
+  let mainVideoLabel = '[vmain]';
+  let mainAudioLabel = '[amain]';
+  
+  if (main.length > 1) {
+    const mainConcat = main.map((_, i) => `[${mainStartIndex + i}:v][${mainStartIndex + i}:a]`).join('') +
+      `concat=n=${main.length}:v=1:a=1${mainVideoLabel}${mainAudioLabel}`;
+    filters.push(mainConcat);
+  } else if (main.length === 1) {
+    filters.push(`[${mainStartIndex}:v]copy${mainVideoLabel}`);
+    filters.push(`[${mainStartIndex}:a]anull${mainAudioLabel}`);
+  }
+  
+  // Step 2: Concatenate overlay track clips if multiple
+  let overlayVideoLabel = null;
+  if (overlay.length > 1) {
+    overlayVideoLabel = '[voverlay]';
+    const overlayConcat = overlay.map((_, i) => `[${overlayStartIndex + i}:v]`).join('') +
+      `concat=n=${overlay.length}:v=1:a=0${overlayVideoLabel}`;
+    filters.push(overlayConcat);
+  } else if (overlay.length === 1) {
+    overlayVideoLabel = '[voverlay]';
+    filters.push(`[${overlayStartIndex}:v]copy${overlayVideoLabel}`);
+  }
+  
+  // Step 3: Concatenate audio track clips if multiple
+  let audioLabel = null;
+  if (audio.length > 1) {
+    audioLabel = '[aaudio]';
+    const audioConcat = audio.map((_, i) => `[${audioStartIndex + i}:a]`).join('') +
+      `concat=n=${audio.length}:v=0:a=1${audioLabel}`;
+    filters.push(audioConcat);
+  } else if (audio.length === 1) {
+    audioLabel = '[aaudio]';
+    filters.push(`[${audioStartIndex}:a]anull${audioLabel}`);
+  }
+  
+  // Step 4: Apply overlay compositing if overlay track exists
+  let finalVideoLabel = mainVideoLabel;
+  if (overlayVideoLabel) {
+    finalVideoLabel = '[vout]';
+    // Scale overlay to 25% of main video size and position at bottom-right with 20px margin
+    const overlayFilter = `${overlayVideoLabel}scale=iw*0.25:ih*0.25[voverlay_scaled];` +
+      `${mainVideoLabel}[voverlay_scaled]overlay=W-w-20:H-h-20${finalVideoLabel}`;
+    filters.push(overlayFilter);
+  }
+  
+  // Step 5: Mix audio tracks if multiple
+  let finalAudioLabel = mainAudioLabel;
+  if (audioLabel) {
+    finalAudioLabel = '[aout]';
+    const audioMixFilter = `${mainAudioLabel}${audioLabel}amix=inputs=2:duration=longest${finalAudioLabel}`;
+    filters.push(audioMixFilter);
+  }
+  
+  return {
+    filterComplex: filters.join(';'),
+    videoLabel: finalVideoLabel,
+    audioLabel: finalAudioLabel
+  };
+}
+
+/**
  * Export timeline to MP4
  * @param {Array} clips - Array of clip objects
  * @param {string} outputPath - Output file path
  * @param {Function} onProgress - Progress callback (0-100)
+ * @param {Object} options - Export options {resolution, quality}
  * @returns {Promise<string>} Output path on success
  */
-async function exportTimeline(clips, outputPath, onProgress = () => {}) {
+async function exportTimeline(clips, outputPath, onProgress = () => {}, options = {}) {
   if (!clips || clips.length === 0) {
     throw new Error('INVALID_CLIPS');
   }
 
+  const { resolution = 'source', quality = 'high', audioQuality = 'high' } = options;
+  
   console.log('[Export] ========== Starting timeline export ==========');
   console.log('[Export] Clips count:', clips.length);
   console.log('[Export] Output path:', outputPath);
+  console.log('[Export] Resolution:', resolution);
+  console.log('[Export] Quality:', quality);
 
   // Sort clips by order
   const sortedClips = [...clips].sort((a, b) => a.order - b.order);
   console.log('[Export] Sorted clips by order:', sortedClips.map(c => ({ name: c.fileName, order: c.order })));
 
-  // Determine target resolution (use the highest resolution among all clips)
-  const targetResolution = sortedClips.reduce((max, clip) => {
-    const clipPixels = clip.width * clip.height;
-    const maxPixels = max.width * max.height;
-    return clipPixels > maxPixels ? { width: clip.width, height: clip.height } : max;
-  }, { width: sortedClips[0].width, height: sortedClips[0].height });
+  // Group clips by track
+  const trackGroups = {
+    main: sortedClips.filter(c => (c.track || 'main') === 'main'),
+    overlay: sortedClips.filter(c => c.track === 'overlay'),
+    audio: sortedClips.filter(c => c.track === 'audio')
+  };
+  
+  const hasMultipleTracks = trackGroups.overlay.length > 0 || trackGroups.audio.length > 0;
+  console.log('[Export] Track distribution:', {
+    main: trackGroups.main.length,
+    overlay: trackGroups.overlay.length,
+    audio: trackGroups.audio.length,
+    multiTrack: hasMultipleTracks
+  });
+
+  // Determine target resolution
+  let targetResolution;
+  if (resolution === 'source') {
+    // Use the highest resolution among all clips
+    targetResolution = sortedClips.reduce((max, clip) => {
+      const clipPixels = clip.width * clip.height;
+      const maxPixels = max.width * max.height;
+      return clipPixels > maxPixels ? { width: clip.width, height: clip.height } : max;
+    }, { width: sortedClips[0].width, height: sortedClips[0].height });
+  } else {
+    // Use the specified resolution preset
+    targetResolution = getResolutionDimensions(resolution);
+  }
   
   console.log('[Export] Target resolution:', targetResolution);
+
+  // Get bitrate settings
+  const bitrateSettings = getBitrateSettings(resolution, quality, audioQuality);
+  console.log('[Export] Bitrate settings:', bitrateSettings);
 
   const tempDir = os.tmpdir();
   const tempFiles = [];
@@ -225,21 +553,22 @@ async function exportTimeline(clips, outputPath, onProgress = () => {}) {
     // Step 1: Extract trimmed segments
     console.log('[Export] Step 1: Extracting trimmed segments...');
     onProgress(5);
-    const segmentPaths = [];
+    const segmentPaths = hasMultipleTracks ? { main: [], overlay: [], audio: [] } : [];
     
     for (let i = 0; i < sortedClips.length; i++) {
       const clip = sortedClips[i];
-      const segmentPath = path.join(tempDir, `segment_${i}_${Date.now()}.mkv`);
+      const clipTrack = clip.track || 'main';
+      const segmentPath = path.join(tempDir, `segment_${clipTrack}_${i}_${Date.now()}.mkv`);
       tempFiles.push(segmentPath);
       
-      console.log(`[Export] Processing clip ${i + 1}/${sortedClips.length}: ${clip.fileName}`);
+      console.log(`[Export] Processing clip ${i + 1}/${sortedClips.length}: ${clip.fileName} (track: ${clipTrack})`);
       
       // Calculate progress range for this segment
       const segmentStartProgress = 5 + (50 * i / sortedClips.length);
       const segmentEndProgress = 5 + (50 * (i + 1) / sortedClips.length);
       
       await Promise.race([
-        extractTrimmedSegment(clip, segmentPath, targetResolution, (segmentPercent) => {
+        extractTrimmedSegment(clip, segmentPath, targetResolution, bitrateSettings, (segmentPercent) => {
           // Map segment progress to overall progress
           const mappedProgress = segmentStartProgress + (segmentPercent * (segmentEndProgress - segmentStartProgress) / 100);
           onProgress(Math.round(mappedProgress));
@@ -247,7 +576,16 @@ async function exportTimeline(clips, outputPath, onProgress = () => {}) {
         timeout(60000) // 60 second timeout per segment
       ]);
       
-      segmentPaths.push(segmentPath);
+      // Add to appropriate track group
+      if (hasMultipleTracks) {
+        if (segmentPaths[clipTrack]) {
+          segmentPaths[clipTrack].push(segmentPath);
+        } else {
+          segmentPaths.main.push(segmentPath); // Fallback to main
+        }
+      } else {
+        segmentPaths.push(segmentPath);
+      }
       
       // Ensure we reach the end of this segment's progress range
       onProgress(Math.round(segmentEndProgress));
@@ -256,14 +594,28 @@ async function exportTimeline(clips, outputPath, onProgress = () => {}) {
     // Step 2: Concatenate segments using filter_complex
     console.log('[Export] Step 2: Concatenating segments...');
     onProgress(55);
-    await Promise.race([
-      concatenateSegments(segmentPaths, outputPath, (percent) => {
-        // Map 0-100% to 55-90% (35% range for better granularity)
-        const mappedProgress = Math.min(55 + (percent * 0.35), 90);
-        onProgress(Math.round(mappedProgress));
-      }),
-      timeout(300000) // 5 minute timeout for concatenation
-    ]);
+    
+    if (hasMultipleTracks) {
+      // Use multi-track concatenation
+      await Promise.race([
+        concatenateMultiTrackSegments(segmentPaths, outputPath, bitrateSettings, (percent) => {
+          // Map 0-100% to 55-90% (35% range for better granularity)
+          const mappedProgress = Math.min(55 + (percent * 0.35), 90);
+          onProgress(Math.round(mappedProgress));
+        }),
+        timeout(300000) // 5 minute timeout for concatenation
+      ]);
+    } else {
+      // Use standard concatenation for single track
+      await Promise.race([
+        concatenateSegments(segmentPaths, outputPath, bitrateSettings, (percent) => {
+          // Map 0-100% to 55-90% (35% range for better granularity)
+          const mappedProgress = Math.min(55 + (percent * 0.35), 90);
+          onProgress(Math.round(mappedProgress));
+        }),
+        timeout(300000) // 5 minute timeout for concatenation
+      ]);
+    }
 
     // Step 3: Finalization
     console.log('[Export] Step 3: Finalizing export...');
@@ -299,4 +651,9 @@ async function exportTimeline(clips, outputPath, onProgress = () => {}) {
   }
 }
 
-module.exports = { exportTimeline };
+module.exports = { 
+  exportTimeline,
+  getResolutionDimensions,
+  getBitrateSettings,
+  generateScaleFilter
+};

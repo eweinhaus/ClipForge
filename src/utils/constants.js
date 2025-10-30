@@ -41,3 +41,65 @@ export const EXPORT_PRESETS = {
   SD_480: { name: '480p', scale: '854:480' },
 };
 
+// Track types
+export const TRACK_TYPES = {
+  MAIN: 'main',
+  OVERLAY: 'overlay',
+  AUDIO: 'audio',
+};
+
+// Track configuration
+export const TRACK_CONFIG = [
+  {
+    id: 'main',
+    label: 'Video 1',
+    type: TRACK_TYPES.MAIN,
+    color: '#4a90e2',
+    height: 62,
+    acceptsVideo: true,
+    acceptsAudio: true,
+  },
+  {
+    id: 'overlay',
+    label: 'Video 2 (PiP)',
+    type: TRACK_TYPES.OVERLAY,
+    color: '#e67e22',
+    height: 62,
+    acceptsVideo: true,
+    acceptsAudio: false,
+  },
+  {
+    id: 'audio',
+    label: 'Audio',
+    type: TRACK_TYPES.AUDIO,
+    color: '#2ecc71',
+    height: 52,
+    acceptsVideo: false,
+    acceptsAudio: true,
+  },
+];
+
+// Default track heights
+export const TRACK_HEIGHTS = {
+  DEFAULT: 62,
+  AUDIO: 52,
+  MIN: 40,
+  MAX: 150,
+};
+
+// Overlay position presets for PiP
+export const OVERLAY_POSITIONS = {
+  TOP_LEFT: { x: 20, y: 20 },
+  TOP_RIGHT: { x: 'W-w-20', y: 20 },
+  BOTTOM_LEFT: { x: 20, y: 'H-h-20' },
+  BOTTOM_RIGHT: { x: 'W-w-20', y: 'H-h-20' },
+  CENTER: { x: '(W-w)/2', y: '(H-h)/2' },
+};
+
+// Default overlay settings
+export const DEFAULT_OVERLAY_SETTINGS = {
+  position: 'BOTTOM_RIGHT',
+  scale: 0.25, // 25% of main video size
+  opacity: 1.0,
+};
+

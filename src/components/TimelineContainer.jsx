@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import TimelineHeader from './TimelineHeader';
 import TimelineContent from './TimelineContent';
 import TimelineControls from './TimelineControls';
 import { useTimelineKeyboard } from '../hooks/useTimelineKeyboard';
@@ -20,9 +19,11 @@ export default function TimelineContainer({
   onSeekToTime,
   onTrimChange,
   onExport,
-  isExporting
+  isExporting,
+  onSplitClip,
+  canSplitClip
 }) {
-  const timelineHeight = 200; // Fixed height
+  const timelineHeight = 280; // Fixed height - increased for taller tracks
   const [zoomLevel, setZoomLevel] = useState(() => {
     try {
       const saved = localStorage.getItem('clipforge.timelinePrefs');
@@ -47,6 +48,18 @@ export default function TimelineContainer({
     }
     return 0;
   });
+  const [hiddenTracks, setHiddenTracks] = useState(() => {
+    try {
+      const saved = localStorage.getItem('clipforge.timelinePrefs');
+      if (saved) {
+        const prefs = JSON.parse(saved);
+        return prefs.hiddenTracks || [];
+      }
+    } catch (e) {
+      console.warn('Failed to load timeline preferences:', e);
+    }
+    return [];
+  });
   const containerRef = useRef(null);
 
   // Save preferences to localStorage when they change
@@ -54,13 +67,14 @@ export default function TimelineContainer({
     try {
       const prefs = {
         zoomLevel,
-        scrollPosition
+        scrollPosition,
+        hiddenTracks
       };
       localStorage.setItem('clipforge.timelinePrefs', JSON.stringify(prefs));
     } catch (e) {
       console.warn('Failed to save timeline preferences:', e);
     }
-  }, [zoomLevel, scrollPosition]);
+  }, [zoomLevel, scrollPosition, hiddenTracks]);
 
   // Keyboard navigation hook
   useTimelineKeyboard({
@@ -70,7 +84,9 @@ export default function TimelineContainer({
     onSeekToTime,
     playheadPosition,
     zoomLevel,
-    timelineRef: containerRef
+    timelineRef: containerRef,
+    onSplitClip,
+    canSplitClip
   });
 
 
@@ -82,13 +98,19 @@ export default function TimelineContainer({
     setScrollPosition(newScroll);
   };
 
+  const handleToggleTrackVisibility = (trackId) => {
+    setHiddenTracks(prev => {
+      if (prev.includes(trackId)) {
+        return prev.filter(id => id !== trackId);
+      } else {
+        return [...prev, trackId];
+      }
+    });
+  };
+
   if (clips.length === 0) {
     return (
       <div className="timeline-container timeline-empty" style={{ height: timelineHeight }}>
-        <div className="empty-state">
-          <p>No clips yet</p>
-          <p className="empty-hint">Import videos to get started!</p>
-        </div>
       </div>
     );
   }
@@ -106,7 +128,6 @@ export default function TimelineContainer({
         }
       }}
     >
-      <TimelineHeader />
       <TimelineContent
         clips={clips}
         selectedClipId={selectedClipId}
@@ -120,6 +141,8 @@ export default function TimelineContainer({
         scrollPosition={scrollPosition}
         onScrollChange={handleScrollChange}
         onTrimChange={onTrimChange}
+        hiddenTracks={hiddenTracks}
+        onToggleTrackVisibility={handleToggleTrackVisibility}
       />
       <TimelineControls
         zoomLevel={zoomLevel}
@@ -130,6 +153,8 @@ export default function TimelineContainer({
         timelineWidth={800} // TODO: Calculate actual timeline width
         onExport={onExport}
         isExporting={isExporting}
+        onSplitClip={onSplitClip}
+        canSplitClip={canSplitClip}
       />
     </div>
   );

@@ -13,16 +13,68 @@
   overflow: hidden;
 }
 
+/* Track-specific clip colors */
+.clip-block--main {
+  background: #4a90e2;
+  border-color: #357abd;
+}
+
+.clip-block--overlay {
+  background: #e67e22;
+  border-color: #d35400;
+}
+
+.clip-block--audio {
+  background: #2ecc71;
+  border-color: #27ae60;
+}
+
 .clip-block:hover,
 .clip-block.hovered {
   background: #0056b3;
   border-color: #004085;
 }
 
+.clip-block--main:hover,
+.clip-block--main.hovered {
+  background: #357abd;
+  border-color: #2a5f8f;
+}
+
+.clip-block--overlay:hover,
+.clip-block--overlay.hovered {
+  background: #d35400;
+  border-color: #a04000;
+}
+
+.clip-block--audio:hover,
+.clip-block--audio.hovered {
+  background: #27ae60;
+  border-color: #1e8449;
+}
+
 .clip-block.selected {
   background: #0056b3;
   border-color: #004085;
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.clip-block--main.selected {
+  background: #357abd;
+  border-color: #2a5f8f;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.4);
+}
+
+.clip-block--overlay.selected {
+  background: #d35400;
+  border-color: #a04000;
+  box-shadow: 0 0 0 2px rgba(230, 126, 34, 0.4);
+}
+
+.clip-block--audio.selected {
+  background: #27ae60;
+  border-color: #1e8449;
+  box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.4);
 }
 
 .clip-block.dragging {
@@ -203,6 +255,30 @@
   border-top: 6px solid rgba(0, 0, 0, 0.9);
 }
 
+/* PiP indicator styles */
+.clip-pip-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #ffffff;
+  border-radius: 3px;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  z-index: 10;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.clip-pip-indicator svg {
+  width: 10px;
+  height: 10px;
+}
+
 /* Dark theme support */
 @media (prefers-color-scheme: dark) {
   .clip-filename-overlay {
@@ -222,6 +298,12 @@
   
   .hover-card-arrow {
     border-top-color: rgba(255, 255, 255, 0.95);
+  }
+  
+  .clip-pip-indicator {
+    background: rgba(255, 255, 255, 0.9);
+    color: #000000;
+    border: 1px solid rgba(0, 0, 0, 0.2);
   }
 }
 

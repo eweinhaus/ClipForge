@@ -3,7 +3,7 @@
  * Tests snap-to-grid, time/pixel conversion, and trim validation
  */
 
-import { timeToPx, pxToTime, snap, validateTrimRange, formatTimecode } from '../utils/timelineUtils';
+import { timeToPx, pxToTime, snap, validateTrimRange, formatTimecode, isPlayheadWithinClip } from '../timelineUtils';
 
 describe('Timeline Utils', () => {
   describe('timeToPx', () => {
@@ -135,6 +135,103 @@ describe('Timeline Utils', () => {
 
     test('handles large values', () => {
       expect(formatTimecode(3661.5)).toBe('01:01:01.50');
+    });
+  });
+
+  describe('isPlayheadWithinClip', () => {
+    const clips = [
+      {
+        id: 'clip1',
+        duration: 10,
+        trimStart: 0,
+        trimEnd: 10,
+        order: 0
+      },
+      {
+        id: 'clip2',
+        duration: 8,
+        trimStart: 2,
+        trimEnd: 6,
+        order: 1
+      },
+      {
+        id: 'clip3',
+        duration: 5,
+        trimStart: 0,
+        trimEnd: 5,
+        order: 2
+      }
+    ];
+
+    test('returns true when playhead is within first clip', () => {
+      expect(isPlayheadWithinClip(5, clips[0], clips)).toBe(true);
+      expect(isPlayheadWithinClip(1, clips[0], clips)).toBe(true);
+      expect(isPlayheadWithinClip(9, clips[0], clips)).toBe(true);
+    });
+
+    test('returns false when playhead is at exact start of clip', () => {
+      expect(isPlayheadWithinClip(0, clips[0], clips)).toBe(false);
+    });
+
+    test('returns false when playhead is at exact end of clip', () => {
+      expect(isPlayheadWithinClip(10, clips[0], clips)).toBe(false);
+    });
+
+    test('returns true when playhead is within trimmed second clip', () => {
+      // Clip2 starts at position 10 (after clip1)
+      // Clip2 has trimStart=2, trimEnd=6, so effective duration is 4
+      // Timeline position: 10 to 14
+      expect(isPlayheadWithinClip(11, clips[1], clips)).toBe(true);
+      expect(isPlayheadWithinClip(13, clips[1], clips)).toBe(true);
+    });
+
+    test('returns false when playhead is before second clip', () => {
+      expect(isPlayheadWithinClip(5, clips[1], clips)).toBe(false);
+    });
+
+    test('returns false when playhead is after second clip', () => {
+      expect(isPlayheadWithinClip(15, clips[1], clips)).toBe(false);
+    });
+
+    test('returns true when playhead is within third clip', () => {
+      // Clip3 starts at position 14 (after clip1=10 and clip2=4)
+      // Timeline position: 14 to 19
+      expect(isPlayheadWithinClip(15, clips[2], clips)).toBe(true);
+      expect(isPlayheadWithinClip(18, clips[2], clips)).toBe(true);
+    });
+
+    test('returns false for null clip', () => {
+      expect(isPlayheadWithinClip(5, null, clips)).toBe(false);
+    });
+
+    test('returns false for undefined clip', () => {
+      expect(isPlayheadWithinClip(5, undefined, clips)).toBe(false);
+    });
+
+    test('handles edge cases with tolerance', () => {
+      // Test that positions very close to edges (within tolerance) return false
+      expect(isPlayheadWithinClip(0.005, clips[0], clips)).toBe(false);
+      expect(isPlayheadWithinClip(9.995, clips[0], clips)).toBe(false);
+    });
+
+    test('handles single clip', () => {
+      const singleClip = [clips[0]];
+      expect(isPlayheadWithinClip(5, singleClip[0], singleClip)).toBe(true);
+      expect(isPlayheadWithinClip(0, singleClip[0], singleClip)).toBe(false);
+      expect(isPlayheadWithinClip(10, singleClip[0], singleClip)).toBe(false);
+    });
+
+    test('handles clips with no trim (full duration)', () => {
+      const fullClips = [
+        {
+          id: 'full1',
+          duration: 10,
+          trimStart: 0,
+          trimEnd: 10,
+          order: 0
+        }
+      ];
+      expect(isPlayheadWithinClip(5, fullClips[0], fullClips)).toBe(true);
     });
   });
 });

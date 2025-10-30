@@ -13,16 +13,74 @@ const ExportDialog = ({
 }) => {
   const [outputPath, setOutputPath] = useState('');
   const [resolution, setResolution] = useState('source');
+  const [quality, setQuality] = useState('high');
+  const [audioQuality, setAudioQuality] = useState('high');
   const [showFilePicker, setShowFilePicker] = useState(false);
+  const [validationWarning, setValidationWarning] = useState('');
 
   // Reset state when dialog opens
   useEffect(() => {
     if (isOpen) {
       setOutputPath('');
       setResolution('source');
+      setQuality('high');
+      setAudioQuality('high');
       setShowFilePicker(false);
+      setValidationWarning('');
     }
   }, [isOpen]);
+
+  // Validate resolution selection when clips or resolution changes
+  useEffect(() => {
+    if (clips.length > 0 && resolution !== 'source') {
+      validateResolution();
+    } else {
+      setValidationWarning('');
+    }
+  }, [clips, resolution]);
+
+  // Validate resolution selection and warn about upscaling
+  const validateResolution = () => {
+    if (clips.length === 0 || resolution === 'source') {
+      setValidationWarning('');
+      return;
+    }
+
+    const targetRes = getResolutionDimensions(resolution);
+    let upscaledClips = 0;
+    let totalPixels = 0;
+    let maxPixels = 0;
+
+    clips.forEach(clip => {
+      const clipPixels = clip.width * clip.height;
+      totalPixels += clipPixels;
+      maxPixels = Math.max(maxPixels, clipPixels);
+      
+      if (clipPixels < targetRes.width * targetRes.height) {
+        upscaledClips++;
+      }
+    });
+
+    const upscalePercentage = (upscaledClips / clips.length) * 100;
+    
+    if (upscalePercentage > 25) {
+      setValidationWarning(`⚠️ ${Math.round(upscalePercentage)}% of clips will be upscaled. Consider using "Source Resolution" for better quality.`);
+    } else if (upscalePercentage > 0) {
+      setValidationWarning(`ℹ️ ${upscaledClips} clip${upscaledClips > 1 ? 's' : ''} will be upscaled.`);
+    } else {
+      setValidationWarning('');
+    }
+  };
+
+  // Get resolution dimensions
+  const getResolutionDimensions = (res) => {
+    switch (res) {
+      case '720p': return { width: 1280, height: 720 };
+      case '1080p': return { width: 1920, height: 1080 };
+      case '480p': return { width: 854, height: 480 };
+      default: return { width: 0, height: 0 };
+    }
+  };
 
   const handleFilePicker = async () => {
     try {
@@ -46,7 +104,7 @@ const ExportDialog = ({
       return;
     }
 
-    onExport(outputPath);
+    onExport(outputPath, { resolution, quality, audioQuality });
   };
 
   const handleCancel = () => {
@@ -77,10 +135,12 @@ const ExportDialog = ({
   const getStatusText = () => {
     if (exportError) return `Export failed: ${exportError}`;
     if (isExporting && exportProgress < 100) {
-      if (exportProgress <= 5) return 'Preparing export...';
-      if (exportProgress <= 55) return `Processing clips... ${exportProgress}%`;
+      const resText = resolution === 'source' ? 'Source' : resolution.toUpperCase();
+      const qualityText = quality.charAt(0).toUpperCase() + quality.slice(1);
+      if (exportProgress <= 5) return `Preparing ${resText} export at ${qualityText} quality...`;
+      if (exportProgress <= 55) return `Processing clips at ${resText}... ${exportProgress}%`;
       if (exportProgress <= 90) return `Combining clips... ${exportProgress}%`;
-      if (exportProgress < 100) return `Finalizing... ${exportProgress}%`;
+      if (exportProgress < 100) return `Finalizing ${resText} export... ${exportProgress}%`;
     }
     if (exportProgress === 100) return 'Export completed successfully!';
     return 'Ready to export';
@@ -119,6 +179,14 @@ const ExportDialog = ({
                 <span className="stat-label">Resolution:</span>
                 <span className="stat-value">{resolution === 'source' ? 'Source' : resolution}</span>
               </div>
+              <div className="stat">
+                <span className="stat-label">Video Quality:</span>
+                <span className="stat-value">{quality.charAt(0).toUpperCase() + quality.slice(1)}</span>
+              </div>
+              <div className="stat">
+                <span className="stat-label">Audio Quality:</span>
+                <span className="stat-value">{audioQuality.charAt(0).toUpperCase() + audioQuality.slice(1)}</span>
+              </div>
             </div>
           </div>
 
@@ -144,20 +212,56 @@ const ExportDialog = ({
             </div>
           </div>
 
-          {/* Resolution Options */}
+          {/* Export Options */}
           <div className="export-section">
-            <label className="section-label">Resolution</label>
-            <select
-              value={resolution}
-              onChange={(e) => setResolution(e.target.value)}
-              className="resolution-select"
-              disabled={isExporting}
-            >
-              <option value="source">Source Resolution</option>
-              <option value="1080p">1080p (1920x1080)</option>
-              <option value="720p">720p (1280x720)</option>
-              <option value="480p">480p (854x480)</option>
-            </select>
+            <label className="section-label">Export Settings</label>
+            <div className="export-options-row">
+              <div className="option-group">
+                <label className="option-label">Resolution</label>
+                <select
+                  value={resolution}
+                  onChange={(e) => setResolution(e.target.value)}
+                  className="resolution-select"
+                  disabled={isExporting}
+                >
+                  <option value="source">Source Resolution</option>
+                  <option value="1080p">1080p (1920×1080)</option>
+                  <option value="720p">720p (1280×720)</option>
+                  <option value="480p">480p (854×480)</option>
+                </select>
+              </div>
+              <div className="option-group">
+                <label className="option-label">Video Quality</label>
+                <select
+                  value={quality}
+                  onChange={(e) => setQuality(e.target.value)}
+                  className="quality-select"
+                  disabled={isExporting}
+                >
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+              <div className="option-group">
+                <label className="option-label">Audio Quality</label>
+                <select
+                  value={audioQuality}
+                  onChange={(e) => setAudioQuality(e.target.value)}
+                  className="audio-quality-select"
+                  disabled={isExporting}
+                >
+                  <option value="high">High (320 kbps)</option>
+                  <option value="medium">Medium (192 kbps)</option>
+                  <option value="low">Low (128 kbps)</option>
+                </select>
+              </div>
+            </div>
+            {validationWarning && (
+              <div className="validation-warning">
+                {validationWarning}
+              </div>
+            )}
           </div>
 
           {/* Progress Section */}

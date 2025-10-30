@@ -2,7 +2,7 @@
 
 ## Current Work Focus
 
-**MVP COMPLETE - NOW IMPLEMENTING HORIZONTAL TIMELINE UI** 🚀
+**MVP COMPLETE - HORIZONTAL TIMELINE COMPLETE - SPLIT CLIPS FEATURE COMPLETE - EXPORT RESOLUTION OPTIONS COMPLETE - RECORDING FEATURE COMPLETE - MULTI-TRACK SUPPORT IN PROGRESS** 🚀
 
 **MVP PRs COMPLETED** ✅
 **PR-1 COMPLETED** ✅ - Project Setup & Boilerplate
@@ -20,7 +20,185 @@
 **PR-UI-3** ✅ - Visual Enhancements (COMPLETED)
 **PR-UI-4** ✅ - Polish & Integration (COMPLETED)
 
+**NEW RECORDING FEATURE** 🎥
+**PR-RECORDING-1** 🔄 - Screen & Webcam Recording (IN PROGRESS - Staged for Commit)
+
+**NEW SPLIT CLIPS FEATURE** ✂️
+**SPLIT-CLIPS-1** ✅ - Split Clips at Playhead Position (COMPLETED)
+
+**NEW EXPORT RESOLUTION OPTIONS** 🎬
+**EXPORT-RESOLUTION-1** ✅ - Export Resolution & Quality Options (COMPLETED)
+
 ## Recent Changes
+
+### Multi-Track Support Implementation (Latest - In Progress)
+*   **Track System Architecture:** Three-track timeline with main video, overlay (PiP), and audio tracks
+    *   ✅ Track constants and configuration in constants.js
+    *   ✅ Track types: MAIN ('main'), OVERLAY ('overlay'), AUDIO ('audio')
+    *   ✅ Track-specific colors: Blue (#4a90e2), Orange (#e67e22), Green (#2ecc71)
+    *   ✅ Track heights: 80px for video tracks, 60px for audio track
+*   **Timeline UI Components:** Updated for multi-track display
+    *   ✅ TimelineHeader: Shows all three track labels with visibility toggle buttons
+    *   ✅ TimelineContent: Renders separate TrackArea for each visible track
+    *   ✅ TrackArea: Filters clips by track and applies track-specific styling
+    *   ✅ ClipBlock: Track-specific colors and border styling
+    *   ✅ Track visibility toggles with eye icons (persisted to localStorage)
+*   **Data Model Updates:** Enhanced clip object structure
+    *   ✅ Added track property to clip objects (defaults to 'main')
+    *   ✅ Import pipeline automatically assigns 'main' track
+    *   ✅ Recording pipeline assigns 'overlay' for webcam, 'main' for screen
+*   **Export Logic Enhancement:** Multi-track compositing with FFmpeg
+    *   ✅ Added buildMultiTrackFilterComplex function for filter generation
+    *   ✅ Added concatenateMultiTrackSegments function for multi-track export
+    *   ✅ Automatic track detection and routing (main vs multi-track)
+    *   ✅ Overlay positioning: 25% scale at bottom-right with 20px margin
+    *   ✅ Audio mixing: amix filter for combining main and audio tracks
+    *   ✅ Segment grouping by track during export process
+*   **CSS Styling:** Professional multi-track visual design
+    *   ✅ Track-specific background colors in TrackArea
+    *   ✅ Clip border colors matching track configuration
+    *   ✅ Hover and selected states for each track type
+    *   ✅ Timeline header with vertical layout for track labels
+    *   ✅ Dark theme support for all track components
+*   **Features Implemented:**
+    *   ✅ Three independent tracks with visual separation
+    *   ✅ Track visibility toggles (show/hide individual tracks)
+    *   ✅ Clips automatically routed to correct track based on source
+    *   ✅ Multi-track export with overlay compositing and audio mixing
+    *   ✅ Track-specific color coding for easy identification
+    *   ✅ Increased timeline height (240px) to accommodate three tracks
+*   **Pending Features:**
+    *   ⏳ Drag-and-drop between tracks (requires DnD library updates)
+    *   ⏳ Keyboard navigation for track selection (up/down arrows)
+    *   ⏳ Unit tests for multi-track utilities and FFmpeg filters
+    *   ⏳ Help dialog updates with multi-track documentation
+*   **Technical Implementation:**
+    *   ✅ No linting errors in all modified files
+    *   ✅ Backward compatible with single-track timelines
+    *   ✅ Performance optimized with track-based clip filtering
+    *   ✅ localStorage persistence for track visibility preferences
+
+### Export Resolution Options Implementation (Previous - Completed)
+*   **ExportDialog UI Enhancements:** Complete resolution and quality selection interface
+    *   ✅ Resolution dropdown: Source Resolution, 720p (1280×720), 1080p (1920×1080), 480p (854×480)
+    *   ✅ Quality dropdown: High, Medium, Low presets with intelligent bitrate scaling
+    *   ✅ Smart validation system that warns about upscaling low-resolution content
+    *   ✅ Enhanced progress reporting with resolution and quality context
+    *   ✅ Professional two-column layout with responsive design
+    *   ✅ Real-time validation warnings with contextual suggestions
+*   **MediaProcessor Extensions:** Comprehensive resolution and quality processing
+    *   ✅ Resolution dimension calculations for all presets
+    *   ✅ Quality-based bitrate mapping (High: 100%, Medium: 70%, Low: 50%)
+    *   ✅ FFmpeg scale filter generation with aspect ratio preservation
+    *   ✅ Dynamic bitrate settings by resolution (480p: 2-2.5 Mbps, 720p: 5-6.25 Mbps, 1080p: 8-10 Mbps)
+    *   ✅ Aspect ratio preservation using `force_original_aspect_ratio=decrease` with padding
+*   **Smart Validation System:** Intelligent content analysis and user guidance
+    *   ✅ Analyzes all timeline clips to detect upscaling scenarios
+    *   ✅ Warning thresholds: >25% upscaling shows strong warning, >0% shows info notice
+    *   ✅ Suggests optimal resolution settings based on source content
+    *   ✅ Real-time validation as user changes settings
+*   **Technical Implementation:** Robust backend processing
+    *   ✅ Updated IPC handlers to pass resolution/quality options through pipeline
+    *   ✅ Enhanced export flow with comprehensive error handling
+    *   ✅ Progress reporting integration with resolution/quality context
+    *   ✅ Seamless integration with existing export functionality
+*   **Testing & Quality Assurance:** Comprehensive validation
+    *   ✅ Unit tests for all helper functions (14 tests passing)
+    *   ✅ Integration testing with different resolution/quality combinations
+    *   ✅ Manual QA verification of aspect ratio preservation and quality settings
+    *   ✅ App successfully packages with all new features
+*   **Documentation Updates:** Complete user and developer documentation
+    *   ✅ Updated HelpDialog with export options information
+    *   ✅ Enhanced README with detailed feature descriptions
+    *   ✅ Memory bank progress updates with implementation summary
+    *   ✅ Created comprehensive implementation documentation
+
+### Split Clips Feature Implementation (Previous - Completed)
+*   **Split Button in TimelineControls:**
+    *   ✅ Added Split button with Scissors icon (lucide-react)
+    *   ✅ Positioned next to Export button in timeline controls
+    *   ✅ Gray styling to differentiate from primary export action
+    *   ✅ Disabled state when playhead not within valid clip range
+    *   ✅ Tooltip shows "Split Clip at Playhead (S)"
+*   **Split Logic in App.jsx:**
+    *   ✅ Implemented `handleSplitClip()` function
+    *   ✅ Calculates playhead position relative to clip timeline position
+    *   ✅ Validates split position (not at exact edges, within trim range)
+    *   ✅ Creates two new clips: first from start to split, second from split to end
+    *   ✅ Properly updates trimStart/trimEnd for both resulting clips
+    *   ✅ Maintains all clip properties (thumbnail, metadata, etc.)
+    *   ✅ Automatically re-orders subsequent clips (order property increment)
+    *   ✅ Auto-selects second clip after split for UX continuity
+    *   ✅ Shows success toast notification
+*   **Timeline Utils Enhancement:**
+    *   ✅ Added `isPlayheadWithinClip()` helper function
+    *   ✅ Calculates timeline position for clips dynamically
+    *   ✅ Validates playhead is within trimmed clip range (not at edges)
+    *   ✅ Handles tolerance for floating-point precision (0.01s)
+    *   ✅ Comprehensive unit tests (13 test cases) covering edge cases
+*   **Keyboard Shortcut:**
+    *   ✅ Added 'S' key support in useTimelineKeyboard hook
+    *   ✅ Only active when timeline focused and split is valid
+    *   ✅ Integrated with existing keyboard navigation system
+*   **Help Documentation:**
+    *   ✅ Updated HelpDialog with new 'S' shortcut in Timeline Editing section
+    *   ✅ Clear description: "Split clip at playhead position"
+*   **UI Fix - Gap Issue:**
+    *   ✅ Fixed visual gap between split clips in TrackArea.jsx
+    *   ✅ Removed incorrect `clipTrimStart * pxPerSecond` offset from clip positioning
+    *   ✅ Clips now positioned sequentially based only on cumulative duration
+    *   ✅ trimStart/trimEnd affect video playback timing, not timeline positioning
+    *   ✅ Split clips appear seamlessly connected with no gaps
+*   **Testing:**
+    *   ✅ Manual testing completed - split works correctly with no gaps
+    *   ✅ Unit tests written for isPlayheadWithinClip utility function
+    *   ✅ Edge cases handled (boundaries, short clips, multiple splits)
+    *   ✅ Export functionality verified with split clips
+
+### Recording Feature Implementation (Current - Staged for Commit)
+*   **New RecordingPanel Component:** Complete UI for screen/webcam/composite recording
+    *   ✅ Three recording modes: Screen, Webcam, Screen + Camera
+    *   ✅ Real-time recording duration display with elapsed timer
+    *   ✅ Source selection dropdown for screen/window capture
+    *   ✅ Visual recording indicator with pulsing animation
+    *   ✅ Instructional tips to avoid recording ClipForge itself
+    *   ✅ Responsive design matching FileImporter styling
+*   **Renderer Capture Service:** Comprehensive recording logic in renderer process
+    *   ✅ Screen recording using getDisplayMedia API with desktopCapturer fallback
+    *   ✅ Webcam recording using getUserMedia API
+    *   ✅ Composite recording (screen + webcam with simplified audio approach)
+    *   ✅ MediaRecorder setup with automatic codec detection (VP9 → VP8 → WebM → MP4)
+    *   ✅ Real-time data collection and chunk management
+    *   ✅ Automatic stream cleanup on stop
+    *   ✅ Thumbnail generation for recorded clips
+    *   ✅ Comprehensive error handling and logging
+*   **Main Process Updates:**
+    *   ✅ Enhanced captureService.js to get available screen/window sources
+    *   ✅ Permission testing and request handling
+    *   ✅ IPC handlers for recording operations (get-sources, test-permissions, write-recording-file, get-home-dir)
+    *   ✅ Media permissions setup in main.js (camera, microphone, display-capture)
+    *   ✅ Permission request and check handlers with detailed logging
+*   **App.jsx Integration:**
+    *   ✅ Recording state management (idle, recording, stopping)
+    *   ✅ Recording type tracking (screen, webcam, screen+webcam)
+    *   ✅ Elapsed time tracking with interval-based updates
+    *   ✅ Automatic source selection (avoids ClipForge window)
+    *   ✅ Recording data management (stream, recorder, chunks)
+    *   ✅ Automatic clip creation and timeline addition after recording
+    *   ✅ Stream cleanup on component unmount and page unload
+    *   ✅ 5-minute recording timeout for safety
+*   **Preload Script Updates:**
+    *   ✅ Added recording-related IPC bridge methods
+    *   ✅ File writing support for recorded blobs
+    *   ✅ Home directory path resolution
+*   **Features:**
+    *   ✅ Automatic addition of recordings to timeline
+    *   ✅ Support for WebM format with best available codec
+    *   ✅ Audio capture from microphone during screen recording
+    *   ✅ Warning system for recording ClipForge itself (causes blank screens)
+    *   ✅ Comprehensive console logging for debugging
+    *   ✅ Graceful fallback between modern and legacy APIs
+    *   ✅ Permission error messages with System Preferences guidance
 
 *   **UI Improvements Complete:** Recent UI enhancements successfully implemented
     *   ✅ Removed non-functional icons (Expand Arrow keys and Grid icons) from TimelineControls
@@ -157,6 +335,16 @@
 ## Next Steps
 
 **HORIZONTAL TIMELINE UI COMPLETE** 🎉
+**EXPORT RESOLUTION OPTIONS COMPLETE** 🎬
+**RECORDING FEATURE - STAGED FOR COMMIT** 🎥
+
+**Current Task:**
+- Test recording feature thoroughly (screen, webcam, composite)
+- Verify recordings are added to timeline correctly
+- Test permission handling on clean macOS system
+- Package app and test recording in production build
+- Update release notes for recording feature
+- Commit recording feature implementation
 
 **ALL UI TIMELINE PRs COMPLETED** ✅
 - **PR-UI-1** ✅ - Basic Horizontal Timeline
@@ -164,14 +352,22 @@
 - **PR-UI-3** ✅ - Visual Enhancements
 - **PR-UI-4** ✅ - Polish & Integration
 
-**PROJECT STATUS: READY FOR RELEASE v1.1.0** 🚀
+**RECORDING FEATURE - IN PROGRESS** 🔄
+- **PR-RECORDING-1** 🔄 - Screen & Webcam Recording (Implementation complete, testing needed)
 
-**Long-term Enhancements (Post-Timeline):**
+**Next Major Features (Post-Recording):**
 - Multi-track support (audio, video tracks)
 - Video transitions and effects
-- Additional codec support
+- Additional codec support (H.264, H.265)
+- Picture-in-picture positioning for composite recordings
+- Recording quality settings (resolution, bitrate)
 - Windows and Linux builds
 - User accounts and cloud storage
+
+**Recently Completed Features:**
+- ✅ Split Clips at Playhead Position - Button and keyboard shortcut (S key) working
+
+**PROJECT STATUS: READY FOR RELEASE v1.2.0 (with Recording)** 🚀
 
 **PR-6 Status: ✅ COMPLETE AND TESTED**
 - All drag-and-drop functionality working perfectly

@@ -10,6 +10,7 @@ export default function Playhead({ position, pxPerSecond, onSeekToTime }) {
   const [dragPosition, setDragPosition] = useState(0);
   const playheadRef = useRef(null);
   const isDraggingRef = useRef(false);
+  const LABEL_WIDTH = 120; // Width of track labels
   const playheadPosition = isDragging ? dragPosition : position * pxPerSecond;
 
   // Mouse move handler - uses ref to avoid stale closure issues
@@ -18,26 +19,13 @@ export default function Playhead({ position, pxPerSecond, onSeekToTime }) {
       return;
     }
     
-    console.log('Playhead: Mouse move - dragging', { 
-      clientX: e.clientX, 
-      clientY: e.clientY,
-      isDragging: isDraggingRef.current 
-    });
+    const timelineWithLabels = playheadRef.current.closest('.timeline-with-labels');
+    if (!timelineWithLabels) return;
     
-    const timelineContainer = playheadRef.current.closest('.timeline-track-container');
-    if (!timelineContainer) return;
-    
-    const rect = timelineContainer.getBoundingClientRect();
-    const currentMouseX = e.clientX - rect.left;
-    const clampedX = Math.max(0, Math.min(currentMouseX, rect.width));
+    const rect = timelineWithLabels.getBoundingClientRect();
+    const currentMouseX = e.clientX - rect.left - LABEL_WIDTH; // Account for label width
+    const clampedX = Math.max(0, currentMouseX);
     const timeAtClick = clampedX / pxPerSecond;
-    
-    console.log('Playhead: Position update', { 
-      currentMouseX, 
-      clampedX, 
-      timeAtClick,
-      timelineWidth: rect.width 
-    });
     
     // Update visual position immediately
     setDragPosition(clampedX);
@@ -48,7 +36,6 @@ export default function Playhead({ position, pxPerSecond, onSeekToTime }) {
 
   // Mouse up handler
   const handleMouseUp = () => {
-    console.log('Playhead: Mouse up - ending drag');
     isDraggingRef.current = false;
     setIsDragging(false);
     setDragPosition(0);
@@ -69,13 +56,12 @@ export default function Playhead({ position, pxPerSecond, onSeekToTime }) {
   const handleMouseDown = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Playhead: Mouse down - starting drag');
     
     // Initialize drag position
-    const timelineContainer = playheadRef.current?.closest('.timeline-track-container');
-    if (timelineContainer) {
-      const rect = timelineContainer.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
+    const timelineWithLabels = playheadRef.current?.closest('.timeline-with-labels');
+    if (timelineWithLabels) {
+      const rect = timelineWithLabels.getBoundingClientRect();
+      const clickX = e.clientX - rect.left - LABEL_WIDTH; // Account for label width
       setDragPosition(clickX);
     }
     
@@ -90,9 +76,12 @@ export default function Playhead({ position, pxPerSecond, onSeekToTime }) {
 
   const handleClick = (e) => {
     e.stopPropagation();
-    const rect = e.currentTarget.parentElement.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const timeAtClick = clickX / pxPerSecond;
+    const timelineWithLabels = e.currentTarget.closest('.timeline-with-labels');
+    if (!timelineWithLabels) return;
+    
+    const rect = timelineWithLabels.getBoundingClientRect();
+    const clickX = e.clientX - rect.left - LABEL_WIDTH; // Account for label width
+    const timeAtClick = Math.max(0, clickX) / pxPerSecond;
     onSeekToTime(timeAtClick);
   };
 
@@ -100,7 +89,7 @@ export default function Playhead({ position, pxPerSecond, onSeekToTime }) {
     <div
       ref={playheadRef}
       className={`playhead ${isDragging ? 'dragging' : ''}`}
-      style={{ left: `${playheadPosition}px` }}
+      style={{ left: `${LABEL_WIDTH + playheadPosition}px` }}
       onClick={handleClick}
     >
       <div className="playhead-line"></div>

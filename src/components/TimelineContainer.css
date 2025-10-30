@@ -8,9 +8,22 @@
   display: flex;
   flex-direction: column;
   z-index: 100;
-  min-height: 150px;
-  max-height: 300px;
   transition: height 0.2s ease;
+}
+
+.timeline-container > div:first-of-type {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.timeline-container > div:first-of-type > .timeline-header {
+  flex-shrink: 0;
+}
+
+.timeline-container > div:first-of-type > .timeline-content {
+  flex: 1;
+  overflow: hidden;
 }
 
 .timeline-container.timeline-empty {

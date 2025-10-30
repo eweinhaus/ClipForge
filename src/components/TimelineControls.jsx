@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ZoomIn, ZoomOut, RotateCcw, Download } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Download, Scissors } from 'lucide-react';
 import { debounce } from '../utils/timelineUtils';
 import './TimelineControls.css';
 
@@ -15,7 +15,9 @@ export default function TimelineControls({
   clips,
   timelineWidth,
   onExport,
-  isExporting
+  isExporting,
+  onSplitClip,
+  canSplitClip
 }) {
   const zoomLevels = [0.25, 0.5, 1, 2, 4];
   const currentZoomIndex = zoomLevels.indexOf(zoomLevel);
@@ -98,6 +100,16 @@ export default function TimelineControls({
       </div>
       
       <div className="timeline-controls-right">
+        <button
+          className="split-btn"
+          onClick={onSplitClip}
+          disabled={!canSplitClip}
+          title="Split Clip at Playhead (S)"
+          aria-label="Split Clip at Playhead"
+        >
+          <Scissors size={16} />
+          <span>Split</span>
+        </button>
         <button
           className="export-btn"
           onClick={onExport}

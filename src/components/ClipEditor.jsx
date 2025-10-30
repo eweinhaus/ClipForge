@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { PictureInPicture } from 'lucide-react';
 import { formatDuration } from '../utils/formatters';
+import PipEditor from './PipEditor';
 import './ClipEditor.css';
 
 /**
  * ClipEditor Component
  * Allows users to set trim start/end points for the selected clip
  */
-export default function ClipEditor({ clip, onTrimChange }) {
+export default function ClipEditor({ clip, onTrimChange, onPipSettingsChange }) {
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
   const [validationError, setValidationError] = useState(null);
+  const [showPipEditor, setShowPipEditor] = useState(false);
 
   // Update local state when clip changes
   useEffect(() => {
@@ -176,7 +179,36 @@ export default function ClipEditor({ clip, onTrimChange }) {
             </div>
           )}
         </div>
+
+        {/* PiP Settings for composite recordings */}
+        {clip.isComposite && (
+          <div className="pip-controls">
+            <div className="pip-control-header">
+              <PictureInPicture size={16} />
+              <span>Picture-in-Picture Settings</span>
+            </div>
+            <button
+              className="btn btn-outline"
+              onClick={() => setShowPipEditor(true)}
+              title="Edit PiP settings"
+            >
+              Edit PiP Settings
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* PiP Editor Modal */}
+      <PipEditor
+        clip={clip}
+        isVisible={showPipEditor}
+        onClose={() => setShowPipEditor(false)}
+        onSave={(settings) => {
+          if (onPipSettingsChange) {
+            onPipSettingsChange(clip.id, settings);
+          }
+        }}
+      />
     </div>
   );
 }

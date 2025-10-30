@@ -18,6 +18,10 @@ ClipForge is a streamlined video editing application that focuses on the core wo
 - **Keyboard Navigation**: Arrow keys for timeline navigation and clip selection
 - **Context Menu**: Right-click clip operations (Duplicate, Reset Trim, Delete)
 - **Export to MP4**: Combine trimmed and ordered clips into a single MP4 file
+  - **Resolution Options**: Source, 720p, 1080p, 480p
+  - **Quality Presets**: High, Medium, Low
+  - **Smart Validation**: Warns about upscaling low-resolution content
+  - **Aspect Ratio Preservation**: Maintains original proportions with letterboxing
 - **Keyboard Shortcuts**: Efficient workflow with comprehensive shortcut support
 - **Preference Persistence**: Timeline zoom and scroll position remembered
 - **Error Recovery**: Robust error handling with graceful fallbacks

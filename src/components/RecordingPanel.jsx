@@ -185,7 +185,7 @@ const RecordingPanel = ({
               </div>
               
               {/* Opacity Control */}
-              <div className="pip-control-group">
+              <div className="pip-control-group opacity-control-group">
                 <label>Opacity: {Math.round(localPipSettings.opacity * 100)}%</label>
                 <input
                   type="range"

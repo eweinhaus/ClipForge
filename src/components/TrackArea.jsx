@@ -5,9 +5,11 @@ import './TrackArea.css';
 
 /**
  * TrackArea Component
- * Area containing clip blocks arranged horizontally
+ * Area containing clip blocks arranged horizontally for a specific track
  */
 export default function TrackArea({ 
+  trackId,
+  trackConfig,
   clips, 
   selectedClipId, 
   onSelectClip, 
@@ -22,7 +24,14 @@ export default function TrackArea({
   let currentPosition = 0;
 
   return (
-    <div className="track-area">
+    <div 
+      className={`track-area track-area--${trackId}`}
+      style={{ 
+        height: `${trackConfig.height}px`,
+        backgroundColor: trackId === 'audio' ? '#f5f5f5' : 'transparent'
+      }}
+      data-track-id={trackId}
+    >
       <div className="track">
         {clips.map((clip) => {
           // Ensure clip has required properties with fallbacks
@@ -42,6 +51,7 @@ export default function TrackArea({
             <ClipBlockErrorBoundary key={clip.id} clip={clip}>
               <ClipBlock
                 clip={clip}
+                trackConfig={trackConfig}
                 isSelected={clip.id === selectedClipId}
                 onSelect={() => onSelectClip(clip.id)}
                 onDelete={() => onDeleteClip(clip.id)}

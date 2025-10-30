@@ -256,6 +256,218 @@ function generateScaleFilter(targetResolution) {
 }
 
 /**
+ * Concatenate segments with multi-track support using filter_complex
+ * @param {Object} trackSegments - Segment paths grouped by track {main: [], overlay: [], audio: []}
+ * @param {string} outputPath - Final output path
+ * @param {Object} bitrateSettings - Bitrate settings {videoBitrate, maxRate, bufferSize}
+ * @param {Function} onProgress - Progress callback
+ * @returns {Promise<void>}
+ */
+async function concatenateMultiTrackSegments(trackSegments, outputPath, bitrateSettings, onProgress) {
+  return new Promise((resolve, reject) => {
+    let lastProgress = 0;
+    
+    const { main = [], overlay = [], audio = [] } = trackSegments;
+    
+    // Build filter_complex for multi-track compositing
+    const filters = [];
+    let inputIndex = 0;
+    
+    // Input indices for each track
+    const mainStartIndex = inputIndex;
+    inputIndex += main.length;
+    const overlayStartIndex = inputIndex;
+    inputIndex += overlay.length;
+    const audioStartIndex = inputIndex;
+    
+    // Step 1: Concatenate main track clips
+    let mainVideoLabel = '[vmain]';
+    let mainAudioLabel = '[amain]';
+    
+    if (main.length > 1) {
+      const mainConcat = main.map((_, i) => `[${mainStartIndex + i}:v][${mainStartIndex + i}:a]`).join('') +
+        `concat=n=${main.length}:v=1:a=1${mainVideoLabel}${mainAudioLabel}`;
+      filters.push(mainConcat);
+    } else if (main.length === 1) {
+      mainVideoLabel = `[${mainStartIndex}:v]`;
+      mainAudioLabel = `[${mainStartIndex}:a]`;
+    }
+    
+    // Step 2: Concatenate overlay track clips if present
+    let overlayVideoLabel = null;
+    if (overlay.length > 1) {
+      overlayVideoLabel = '[voverlay]';
+      const overlayConcat = overlay.map((_, i) => `[${overlayStartIndex + i}:v]`).join('') +
+        `concat=n=${overlay.length}:v=1:a=0${overlayVideoLabel}`;
+      filters.push(overlayConcat);
+    } else if (overlay.length === 1) {
+      overlayVideoLabel = `[${overlayStartIndex}:v]`;
+    }
+    
+    // Step 3: Concatenate audio track clips if present
+    let audioLabel = null;
+    if (audio.length > 1) {
+      audioLabel = '[aaudio]';
+      const audioConcat = audio.map((_, i) => `[${audioStartIndex + i}:a]`).join('') +
+        `concat=n=${audio.length}:v=0:a=1${audioLabel}`;
+      filters.push(audioConcat);
+    } else if (audio.length === 1) {
+      audioLabel = `[${audioStartIndex}:a]`;
+    }
+    
+    // Step 4: Apply overlay compositing if overlay track exists
+    let finalVideoLabel = mainVideoLabel;
+    if (overlayVideoLabel) {
+      finalVideoLabel = '[vout]';
+      // Scale overlay to 25% and position at bottom-right with 20px margin
+      filters.push(`${overlayVideoLabel}scale=iw*0.25:ih*0.25[voverlay_scaled]`);
+      filters.push(`${mainVideoLabel}[voverlay_scaled]overlay=W-w-20:H-h-20${finalVideoLabel}`);
+    }
+    
+    // Step 5: Mix audio tracks if audio track exists
+    let finalAudioLabel = mainAudioLabel;
+    if (audioLabel) {
+      finalAudioLabel = '[aout]';
+      filters.push(`${mainAudioLabel}${audioLabel}amix=inputs=2:duration=longest${finalAudioLabel}`);
+    }
+    
+    const filterComplex = filters.join(';');
+    
+    console.log('[Export] Multi-track filter_complex:', filterComplex);
+    console.log('[Export] Segments:', { main: main.length, overlay: overlay.length, audio: audio.length });
+    
+    let ffmpegCmd = ffmpeg();
+    
+    // Add all segment inputs (main, then overlay, then audio)
+    [...main, ...overlay, ...audio].forEach(segmentPath => {
+      ffmpegCmd = ffmpegCmd.input(segmentPath);
+    });
+    
+    ffmpegCmd
+      .on('start', (cmdLine) => {
+        console.log('[Export] Multi-track concat command:', cmdLine);
+        onProgress(0);
+      })
+      .on('stderr', (line) => {
+        console.debug('[Export][concat stderr]', line.trim());
+      })
+      .on('progress', (progress) => {
+        const percent = Math.min(Math.round(progress.percent || 0), 100);
+        if (percent > lastProgress + 2) {
+          lastProgress = percent;
+          onProgress(percent);
+        }
+      })
+      .on('end', () => {
+        console.log('[Export] Multi-track concatenation complete');
+        onProgress(100);
+        resolve();
+      })
+      .on('error', (err) => {
+        console.error('[Export] Multi-track concatenation failed:', err.message);
+        reject(err);
+      })
+      .complexFilter(filterComplex)
+      // Map final outputs
+      .outputOptions(['-map', finalVideoLabel, '-map', finalAudioLabel])
+      // Final encode: h264 + AAC with bitrate settings
+      .outputOptions([
+        '-c:v', 'libx264', 
+        '-preset', 'fast', 
+        '-b:v', `${bitrateSettings.videoBitrate}k`,
+        '-maxrate', `${bitrateSettings.maxRate}k`,
+        '-bufsize', `${bitrateSettings.bufferSize}k`
+      ])
+      .outputOptions(['-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2'])
+      .outputOptions(['-r', '30'])
+      .outputOptions(['-fflags', '+genpts', '-async', '1'])
+      .output(outputPath)
+      .run();
+  });
+}
+
+/**
+ * Build FFmpeg filter_complex for multi-track compositing
+ * @param {Object} trackGroups - Clips grouped by track {main: [], overlay: [], audio: []}
+ * @param {number} segmentCount - Number of segments per track
+ * @param {Object} targetResolution - Target resolution {width, height}
+ * @returns {string} FFmpeg filter_complex string
+ */
+function buildMultiTrackFilterComplex(trackGroups, segmentCount, targetResolution) {
+  const { main = [], overlay = [], audio = [] } = trackGroups;
+  const filters = [];
+  
+  // Input indices
+  let inputIndex = 0;
+  const mainStartIndex = inputIndex;
+  inputIndex += main.length;
+  const overlayStartIndex = inputIndex;
+  inputIndex += overlay.length;
+  const audioStartIndex = inputIndex;
+  
+  // Step 1: Concatenate main track clips if multiple
+  let mainVideoLabel = '[vmain]';
+  let mainAudioLabel = '[amain]';
+  
+  if (main.length > 1) {
+    const mainConcat = main.map((_, i) => `[${mainStartIndex + i}:v][${mainStartIndex + i}:a]`).join('') +
+      `concat=n=${main.length}:v=1:a=1${mainVideoLabel}${mainAudioLabel}`;
+    filters.push(mainConcat);
+  } else if (main.length === 1) {
+    filters.push(`[${mainStartIndex}:v]copy${mainVideoLabel}`);
+    filters.push(`[${mainStartIndex}:a]anull${mainAudioLabel}`);
+  }
+  
+  // Step 2: Concatenate overlay track clips if multiple
+  let overlayVideoLabel = null;
+  if (overlay.length > 1) {
+    overlayVideoLabel = '[voverlay]';
+    const overlayConcat = overlay.map((_, i) => `[${overlayStartIndex + i}:v]`).join('') +
+      `concat=n=${overlay.length}:v=1:a=0${overlayVideoLabel}`;
+    filters.push(overlayConcat);
+  } else if (overlay.length === 1) {
+    overlayVideoLabel = '[voverlay]';
+    filters.push(`[${overlayStartIndex}:v]copy${overlayVideoLabel}`);
+  }
+  
+  // Step 3: Concatenate audio track clips if multiple
+  let audioLabel = null;
+  if (audio.length > 1) {
+    audioLabel = '[aaudio]';
+    const audioConcat = audio.map((_, i) => `[${audioStartIndex + i}:a]`).join('') +
+      `concat=n=${audio.length}:v=0:a=1${audioLabel}`;
+    filters.push(audioConcat);
+  } else if (audio.length === 1) {
+    audioLabel = '[aaudio]';
+    filters.push(`[${audioStartIndex}:a]anull${audioLabel}`);
+  }
+  
+  // Step 4: Apply overlay compositing if overlay track exists
+  let finalVideoLabel = mainVideoLabel;
+  if (overlayVideoLabel) {
+    finalVideoLabel = '[vout]';
+    // Scale overlay to 25% of main video size and position at bottom-right with 20px margin
+    const overlayFilter = `${overlayVideoLabel}scale=iw*0.25:ih*0.25[voverlay_scaled];` +
+      `${mainVideoLabel}[voverlay_scaled]overlay=W-w-20:H-h-20${finalVideoLabel}`;
+    filters.push(overlayFilter);
+  }
+  
+  // Step 5: Mix audio tracks if multiple
+  let finalAudioLabel = mainAudioLabel;
+  if (audioLabel) {
+    finalAudioLabel = '[aout]';
+    const audioMixFilter = `${mainAudioLabel}${audioLabel}amix=inputs=2:duration=longest${finalAudioLabel}`;
+    filters.push(audioMixFilter);
+  }
+  
+  return {
+    filterComplex: filters.join(';'),
+    videoLabel: finalVideoLabel,
+    audioLabel: finalAudioLabel
+  };
+}
+
+/**
  * Export timeline to MP4
  * @param {Array} clips - Array of clip objects
  * @param {string} outputPath - Output file path
@@ -279,6 +491,21 @@ async function exportTimeline(clips, outputPath, onProgress = () => {}, options 
   // Sort clips by order
   const sortedClips = [...clips].sort((a, b) => a.order - b.order);
   console.log('[Export] Sorted clips by order:', sortedClips.map(c => ({ name: c.fileName, order: c.order })));
+
+  // Group clips by track
+  const trackGroups = {
+    main: sortedClips.filter(c => (c.track || 'main') === 'main'),
+    overlay: sortedClips.filter(c => c.track === 'overlay'),
+    audio: sortedClips.filter(c => c.track === 'audio')
+  };
+  
+  const hasMultipleTracks = trackGroups.overlay.length > 0 || trackGroups.audio.length > 0;
+  console.log('[Export] Track distribution:', {
+    main: trackGroups.main.length,
+    overlay: trackGroups.overlay.length,
+    audio: trackGroups.audio.length,
+    multiTrack: hasMultipleTracks
+  });
 
   // Determine target resolution
   let targetResolution;
@@ -315,14 +542,15 @@ async function exportTimeline(clips, outputPath, onProgress = () => {}, options 
     // Step 1: Extract trimmed segments
     console.log('[Export] Step 1: Extracting trimmed segments...');
     onProgress(5);
-    const segmentPaths = [];
+    const segmentPaths = hasMultipleTracks ? { main: [], overlay: [], audio: [] } : [];
     
     for (let i = 0; i < sortedClips.length; i++) {
       const clip = sortedClips[i];
-      const segmentPath = path.join(tempDir, `segment_${i}_${Date.now()}.mkv`);
+      const clipTrack = clip.track || 'main';
+      const segmentPath = path.join(tempDir, `segment_${clipTrack}_${i}_${Date.now()}.mkv`);
       tempFiles.push(segmentPath);
       
-      console.log(`[Export] Processing clip ${i + 1}/${sortedClips.length}: ${clip.fileName}`);
+      console.log(`[Export] Processing clip ${i + 1}/${sortedClips.length}: ${clip.fileName} (track: ${clipTrack})`);
       
       // Calculate progress range for this segment
       const segmentStartProgress = 5 + (50 * i / sortedClips.length);
@@ -337,7 +565,16 @@ async function exportTimeline(clips, outputPath, onProgress = () => {}, options 
         timeout(60000) // 60 second timeout per segment
       ]);
       
-      segmentPaths.push(segmentPath);
+      // Add to appropriate track group
+      if (hasMultipleTracks) {
+        if (segmentPaths[clipTrack]) {
+          segmentPaths[clipTrack].push(segmentPath);
+        } else {
+          segmentPaths.main.push(segmentPath); // Fallback to main
+        }
+      } else {
+        segmentPaths.push(segmentPath);
+      }
       
       // Ensure we reach the end of this segment's progress range
       onProgress(Math.round(segmentEndProgress));
@@ -346,14 +583,28 @@ async function exportTimeline(clips, outputPath, onProgress = () => {}, options 
     // Step 2: Concatenate segments using filter_complex
     console.log('[Export] Step 2: Concatenating segments...');
     onProgress(55);
-    await Promise.race([
-      concatenateSegments(segmentPaths, outputPath, bitrateSettings, (percent) => {
-        // Map 0-100% to 55-90% (35% range for better granularity)
-        const mappedProgress = Math.min(55 + (percent * 0.35), 90);
-        onProgress(Math.round(mappedProgress));
-      }),
-      timeout(300000) // 5 minute timeout for concatenation
-    ]);
+    
+    if (hasMultipleTracks) {
+      // Use multi-track concatenation
+      await Promise.race([
+        concatenateMultiTrackSegments(segmentPaths, outputPath, bitrateSettings, (percent) => {
+          // Map 0-100% to 55-90% (35% range for better granularity)
+          const mappedProgress = Math.min(55 + (percent * 0.35), 90);
+          onProgress(Math.round(mappedProgress));
+        }),
+        timeout(300000) // 5 minute timeout for concatenation
+      ]);
+    } else {
+      // Use standard concatenation for single track
+      await Promise.race([
+        concatenateSegments(segmentPaths, outputPath, bitrateSettings, (percent) => {
+          // Map 0-100% to 55-90% (35% range for better granularity)
+          const mappedProgress = Math.min(55 + (percent * 0.35), 90);
+          onProgress(Math.round(mappedProgress));
+        }),
+        timeout(300000) // 5 minute timeout for concatenation
+      ]);
+    }
 
     // Step 3: Finalization
     console.log('[Export] Step 3: Finalizing export...');

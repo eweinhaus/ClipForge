@@ -12,7 +12,8 @@ import './ClipBlock.css';
  * Individual clip block in the horizontal timeline
  */
 export default function ClipBlock({ 
-  clip, 
+  clip,
+  trackConfig,
   isSelected, 
   onSelect, 
   onDelete, 
@@ -207,15 +208,21 @@ export default function ClipBlock({
   const currentWidth = timeToPx(draftTrimEnd - draftTrimStart, zoomLevel);
   const currentPosition = position; // TrackArea handles trimStart positioning
 
+  // Get track-specific styles
+  const trackType = clip.track || 'main';
+  const trackColor = trackConfig?.color || '#4a90e2';
+
   return (
     <>
       <div
         ref={blockRef}
-        className={`clip-block ${isSelected ? 'selected' : ''} ${isDraggingEdge ? 'dragging' : ''} ${isHovered ? 'hovered' : ''}`}
+        className={`clip-block clip-block--${trackType} ${isSelected ? 'selected' : ''} ${isDraggingEdge ? 'dragging' : ''} ${isHovered ? 'hovered' : ''}`}
         style={{
           width: `${currentWidth}px`,
           left: `${currentPosition}px`,
-          minWidth: '20px' // Ensure minimum visibility
+          minWidth: '20px', // Ensure minimum visibility
+          borderColor: trackColor,
+          '--track-color': trackColor
         }}
         onClick={handleClick}
         onMouseEnter={handleMouseEnter}
@@ -229,7 +236,7 @@ export default function ClipBlock({
             onSelect();
           }
         }}
-        aria-label={`Clip: ${clip.fileName}, Duration: ${formatDuration(clip.duration)}`}
+        aria-label={`Clip: ${clip.fileName}, Track: ${trackConfig?.label || 'Video'}, Duration: ${formatDuration(clip.duration)}`}
       >
         {/* Left trim handle */}
         <div 

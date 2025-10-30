@@ -62,14 +62,14 @@ src/
 
 ## Component Relationships and Data Model
 
-### Clip Object ✅ IMPLEMENTED (PR-2)
+### Clip Object ✅ IMPLEMENTED (PR-2) + ENHANCED (MULTITRACK-1)
 
 ```javascript
 {
   id: string (uuid),
   fileName: string,
   filePath: string (absolute path),
-  source: 'import',
+  source: 'import' | 'screen' | 'webcam' | 'screen+webcam',
   duration: number (seconds),
   width: number (pixels),
   height: number (pixels),
@@ -77,7 +77,18 @@ src/
   trimEnd: number (seconds, default duration),
   thumbnail: string (base64 image),
   order: number (position in timeline),
-  error: string | null
+  track: 'main' | 'overlay' | 'audio' (default 'main'),
+  error: string | null,
+  // Optional properties for enhanced features
+  hasAudio?: boolean,
+  audioVolume?: number (0-1),
+  isMuted?: boolean,
+  pipSettings?: {
+    position: string,
+    size: number,
+    opacity: number
+  },
+  isComposite?: boolean
 }
 ```
 
@@ -433,6 +444,93 @@ const generateScaleFilter = (targetResolution) => {
 - **mediaProcessor.js:** Added helper functions and enhanced export logic
 - **App.jsx:** Updated export handler to pass options
 - **HelpDialog.jsx:** Added export options documentation
+
+## Multi-Track Architecture ✅ IMPLEMENTED (MULTITRACK-1 through MULTITRACK-9)
+
+### Track System Overview
+ClipForge supports three independent tracks for professional video compositing:
+*   **Main Track (Video 1):** Primary video content, full-screen display
+*   **Overlay Track (Video 2 - PiP):** Picture-in-picture overlay, scaled to 25% at bottom-right
+*   **Audio Track:** Additional audio mixing with main video audio
+
+### Track Configuration
+```javascript
+// From constants.js
+const TRACK_CONFIG = [
+  {
+    id: 'main',
+    label: 'Video 1',
+    type: 'main',
+    color: '#4a90e2', // Blue
+    height: 80,
+    acceptsVideo: true,
+    acceptsAudio: true
+  },
+  {
+    id: 'overlay',
+    label: 'Video 2 (PiP)',
+    type: 'overlay',
+    color: '#e67e22', // Orange
+    height: 80,
+    acceptsVideo: true,
+    acceptsAudio: false
+  },
+  {
+    id: 'audio',
+    label: 'Audio',
+    type: 'audio',
+    color: '#2ecc71', // Green
+    height: 60,
+    acceptsVideo: false,
+    acceptsAudio: true
+  }
+];
+```
+
+### Timeline Component Updates
+*   **TimelineHeader:** Vertical stack of track labels with visibility toggles
+*   **TimelineContent:** Renders TrackArea for each visible track
+*   **TrackArea:** Filters and displays clips for specific track
+*   **ClipBlock:** Track-specific border colors and styling
+*   **Timeline Height:** Increased to 240px to accommodate three tracks
+
+### Export Pipeline Enhancement
+```javascript
+// Multi-track export flow
+1. Group clips by track (main, overlay, audio)
+2. Extract trimmed segments for each clip
+3. Build FFmpeg filter_complex:
+   - Concatenate clips within each track
+   - Scale overlay to 25% and position at bottom-right
+   - Mix audio tracks using amix filter
+4. Generate final MP4 with composited output
+```
+
+### FFmpeg Filter Complex
+```bash
+# Example multi-track filter for 2 main + 1 overlay + 1 audio
+[0:v][0:a][1:v][1:a]concat=n=2:v=1:a=1[vmain][amain];
+[2:v]scale=iw*0.25:ih*0.25[voverlay_scaled];
+[vmain][voverlay_scaled]overlay=W-w-20:H-h-20[vout];
+[amain][3:a]amix=inputs=2:duration=longest[aout]
+```
+
+### Track Assignment Logic
+*   **Imported videos:** Automatically assigned to 'main' track
+*   **Screen recordings:** Assigned to 'main' track
+*   **Webcam recordings:** Assigned to 'overlay' track
+*   **Audio-only files:** Assigned to 'audio' track (future enhancement)
+
+### Track Visibility Management
+*   Eye icon toggle buttons in TimelineHeader
+*   Hidden tracks persisted to localStorage
+*   Clips on hidden tracks excluded from rendering
+*   Export includes all tracks regardless of visibility
+
+### Backward Compatibility
+*   Clips without track property default to 'main'
+*   Single-track timelines use standard concatenation
+*   Multi-track detection automatic based on clip track distribution
 
 ## Build & Packaging ✅ IMPLEMENTED
 

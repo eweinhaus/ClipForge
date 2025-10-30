@@ -2,7 +2,7 @@
 
 ## Current Work Focus
 
-**MVP COMPLETE - NOW IMPLEMENTING HORIZONTAL TIMELINE UI** 🚀
+**MVP COMPLETE - HORIZONTAL TIMELINE COMPLETE - RECORDING FEATURE IN PROGRESS** 🚀
 
 **MVP PRs COMPLETED** ✅
 **PR-1 COMPLETED** ✅ - Project Setup & Boilerplate
@@ -20,7 +20,55 @@
 **PR-UI-3** ✅ - Visual Enhancements (COMPLETED)
 **PR-UI-4** ✅ - Polish & Integration (COMPLETED)
 
+**NEW RECORDING FEATURE** 🎥
+**PR-RECORDING-1** 🔄 - Screen & Webcam Recording (IN PROGRESS - Staged for Commit)
+
 ## Recent Changes
+
+### Recording Feature Implementation (Current - Staged for Commit)
+*   **New RecordingPanel Component:** Complete UI for screen/webcam/composite recording
+    *   ✅ Three recording modes: Screen, Webcam, Screen + Camera
+    *   ✅ Real-time recording duration display with elapsed timer
+    *   ✅ Source selection dropdown for screen/window capture
+    *   ✅ Visual recording indicator with pulsing animation
+    *   ✅ Instructional tips to avoid recording ClipForge itself
+    *   ✅ Responsive design matching FileImporter styling
+*   **Renderer Capture Service:** Comprehensive recording logic in renderer process
+    *   ✅ Screen recording using getDisplayMedia API with desktopCapturer fallback
+    *   ✅ Webcam recording using getUserMedia API
+    *   ✅ Composite recording (screen + webcam with simplified audio approach)
+    *   ✅ MediaRecorder setup with automatic codec detection (VP9 → VP8 → WebM → MP4)
+    *   ✅ Real-time data collection and chunk management
+    *   ✅ Automatic stream cleanup on stop
+    *   ✅ Thumbnail generation for recorded clips
+    *   ✅ Comprehensive error handling and logging
+*   **Main Process Updates:**
+    *   ✅ Enhanced captureService.js to get available screen/window sources
+    *   ✅ Permission testing and request handling
+    *   ✅ IPC handlers for recording operations (get-sources, test-permissions, write-recording-file, get-home-dir)
+    *   ✅ Media permissions setup in main.js (camera, microphone, display-capture)
+    *   ✅ Permission request and check handlers with detailed logging
+*   **App.jsx Integration:**
+    *   ✅ Recording state management (idle, recording, stopping)
+    *   ✅ Recording type tracking (screen, webcam, screen+webcam)
+    *   ✅ Elapsed time tracking with interval-based updates
+    *   ✅ Automatic source selection (avoids ClipForge window)
+    *   ✅ Recording data management (stream, recorder, chunks)
+    *   ✅ Automatic clip creation and timeline addition after recording
+    *   ✅ Stream cleanup on component unmount and page unload
+    *   ✅ 5-minute recording timeout for safety
+*   **Preload Script Updates:**
+    *   ✅ Added recording-related IPC bridge methods
+    *   ✅ File writing support for recorded blobs
+    *   ✅ Home directory path resolution
+*   **Features:**
+    *   ✅ Automatic addition of recordings to timeline
+    *   ✅ Support for WebM format with best available codec
+    *   ✅ Audio capture from microphone during screen recording
+    *   ✅ Warning system for recording ClipForge itself (causes blank screens)
+    *   ✅ Comprehensive console logging for debugging
+    *   ✅ Graceful fallback between modern and legacy APIs
+    *   ✅ Permission error messages with System Preferences guidance
 
 *   **UI Improvements Complete:** Recent UI enhancements successfully implemented
     *   ✅ Removed non-functional icons (Expand Arrow keys and Grid icons) from TimelineControls
@@ -157,6 +205,15 @@
 ## Next Steps
 
 **HORIZONTAL TIMELINE UI COMPLETE** 🎉
+**RECORDING FEATURE - STAGED FOR COMMIT** 🎥
+
+**Current Task:**
+- Test recording feature thoroughly (screen, webcam, composite)
+- Verify recordings are added to timeline correctly
+- Test permission handling on clean macOS system
+- Package app and test recording in production build
+- Update release notes for recording feature
+- Commit recording feature implementation
 
 **ALL UI TIMELINE PRs COMPLETED** ✅
 - **PR-UI-1** ✅ - Basic Horizontal Timeline
@@ -164,14 +221,19 @@
 - **PR-UI-3** ✅ - Visual Enhancements
 - **PR-UI-4** ✅ - Polish & Integration
 
-**PROJECT STATUS: READY FOR RELEASE v1.1.0** 🚀
+**RECORDING FEATURE - IN PROGRESS** 🔄
+- **PR-RECORDING-1** 🔄 - Screen & Webcam Recording (Implementation complete, testing needed)
 
-**Long-term Enhancements (Post-Timeline):**
+**Next Major Features (Post-Recording):**
 - Multi-track support (audio, video tracks)
 - Video transitions and effects
-- Additional codec support
+- Additional codec support (H.264, H.265)
+- Picture-in-picture positioning for composite recordings
+- Recording quality settings (resolution, bitrate)
 - Windows and Linux builds
 - User accounts and cloud storage
+
+**PROJECT STATUS: READY FOR RELEASE v1.2.0 (with Recording)** 🚀
 
 **PR-6 Status: ✅ COMPLETE AND TESTED**
 - All drag-and-drop functionality working perfectly

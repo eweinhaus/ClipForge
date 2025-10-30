@@ -85,6 +85,10 @@ export default function HelpDialog({ isOpen, onClose }) {
             </div>
             <div className="shortcuts-list">
               <div className="shortcut-item">
+                <kbd>S</kbd>
+                <span>Split clip at playhead position</span>
+              </div>
+              <div className="shortcut-item">
                 <kbd>Drag</kbd> <span className="shortcut-description">clip edges</span>
                 <span>Trim clips (with snap-to-grid)</span>
               </div>

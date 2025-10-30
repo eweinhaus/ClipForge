@@ -141,3 +141,35 @@ export function calculateFitZoom(totalDuration, viewportWidth, pixelsPerSecond =
     Math.abs(curr - clampedZoom) < Math.abs(prev - clampedZoom) ? curr : prev
   );
 }
+
+/**
+ * Check if playhead is within a clip's trimmed range
+ * @param {number} playheadTime - Current playhead time in timeline (seconds)
+ * @param {object} clip - Clip object with timelinePosition, trimStart, trimEnd
+ * @param {Array} clips - All clips to calculate timelinePosition
+ * @returns {boolean} True if playhead is within the clip (not at exact start/end)
+ */
+export function isPlayheadWithinClip(playheadTime, clip, clips) {
+  if (!clip) return false;
+  
+  // Calculate the clip's start position in the timeline
+  let timelinePosition = 0;
+  const clipIndex = clips.findIndex(c => c.id === clip.id);
+  
+  if (clipIndex !== -1) {
+    for (let i = 0; i < clipIndex; i++) {
+      const prevClip = clips[i];
+      const trimmedDuration = (prevClip.trimEnd || prevClip.duration || 0) - (prevClip.trimStart || 0);
+      timelinePosition += trimmedDuration;
+    }
+  }
+  
+  // Calculate clip's effective start and end in timeline
+  const clipStart = timelinePosition;
+  const clipEnd = timelinePosition + ((clip.trimEnd || clip.duration || 0) - (clip.trimStart || 0));
+  
+  // Playhead must be INSIDE the clip (not at exact edges to allow valid split)
+  // Add small tolerance to avoid floating point issues
+  const tolerance = 0.01;
+  return playheadTime > (clipStart + tolerance) && playheadTime < (clipEnd - tolerance);
+}

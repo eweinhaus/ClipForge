@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Download, HelpCircle } from 'lucide-react';
 import { ToastProvider, useToast } from './utils/toastContext';
 import { generateUuid } from './utils/uuid';
 import { ERROR_MESSAGES } from './utils/constants';
+import { isPlayheadWithinClip } from './utils/timelineUtils';
 import { 
   startScreenRecord, 
   startWebcamRecord, 
@@ -839,6 +840,88 @@ function AppContent() {
     setSelectedSource(source);
   };
 
+  /**
+   * Handle splitting clip at playhead position
+   */
+  const handleSplitClip = () => {
+    if (!selectedClipId || clips.length === 0) return;
+
+    const clip = clips.find(c => c.id === selectedClipId);
+    if (!clip) return;
+
+    // Verify playhead is within the clip
+    if (!isPlayheadWithinClip(currentPlaybackTime, clip, clips)) {
+      showToast('Playhead must be within the clip to split', 'warning');
+      return;
+    }
+
+    // Calculate the clip's start position in the timeline
+    let timelinePosition = 0;
+    const clipIndex = clips.findIndex(c => c.id === clip.id);
+    
+    for (let i = 0; i < clipIndex; i++) {
+      const prevClip = clips[i];
+      const trimmedDuration = (prevClip.trimEnd || prevClip.duration || 0) - (prevClip.trimStart || 0);
+      timelinePosition += trimmedDuration;
+    }
+
+    // Calculate split time relative to the original video file
+    const timeIntoClip = currentPlaybackTime - timelinePosition;
+    const splitTime = (clip.trimStart || 0) + timeIntoClip;
+
+    // Safety check: ensure split time is within trim range
+    if (splitTime <= (clip.trimStart || 0) || splitTime >= (clip.trimEnd || clip.duration)) {
+      showToast('Cannot split at clip edges', 'warning');
+      return;
+    }
+
+    // Create first clip (from start to split point)
+    const firstClip = {
+      ...clip,
+      id: generateUuid(),
+      trimEnd: splitTime,
+      order: clip.order
+    };
+
+    // Create second clip (from split point to end)
+    const secondClip = {
+      ...clip,
+      id: generateUuid(),
+      trimStart: splitTime,
+      order: clip.order + 1
+    };
+
+    // Remove original clip and insert both new clips
+    // Update order property for all subsequent clips
+    const updatedClips = clips
+      .filter(c => c.id !== clip.id)
+      .map(c => {
+        if (c.order > clip.order) {
+          return { ...c, order: c.order + 1 };
+        }
+        return c;
+      });
+
+    // Add the two new clips and sort by order
+    const newClips = [...updatedClips, firstClip, secondClip].sort((a, b) => a.order - b.order);
+    
+    setClips(newClips);
+    setSelectedClipId(secondClip.id); // Select the second part
+    showToast('Clip split successfully', 'success');
+  };
+
+  /**
+   * Check if the current playhead position allows splitting
+   */
+  const canSplitClip = useMemo(() => {
+    if (!selectedClipId || clips.length === 0) return false;
+    
+    const clip = clips.find(c => c.id === selectedClipId);
+    if (!clip) return false;
+    
+    return isPlayheadWithinClip(currentPlaybackTime, clip, clips);
+  }, [selectedClipId, currentPlaybackTime, clips]);
+
   return (
     <div className="app-container">
       {/* Help Button (Top Right) */}
@@ -904,6 +987,8 @@ function AppContent() {
           onTrimChange={handleTrimChange}
           onExport={() => setShowExportDialog(true)}
           isExporting={isExporting}
+          onSplitClip={handleSplitClip}
+          canSplitClip={canSplitClip}
         />
       </TimelineErrorBoundary>
 

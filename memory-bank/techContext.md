@@ -6,14 +6,28 @@
 *   **Frontend:** React 18 with hooks ✅
 *   **Build Tools:** Webpack with babel-loader for JSX ✅
 *   **Media Processing:** `fluent-ffmpeg` (Node.js wrapper for FFmpeg) ✅
+*   **Media Capture:** Web APIs (getDisplayMedia, getUserMedia, MediaRecorder) ✅
+*   **Screen Sources:** Electron desktopCapturer API ✅
 *   **Package Manager:** npm ✅
 *   **IPC Security:** contextBridge with contextIsolation ✅
 
-## Technologies To Be Added (Future PRs)
+## Recording Technologies ✅ IMPLEMENTED (PR-RECORDING-1)
 
-*   **Drag & Drop Library:** `react-beautiful-dnd` (PR-6)
-*   **Video Player:** Standard HTML5 `<video>` element (PR-3)
-*   **Toast Notifications:** `react-hot-toast` or similar (PR-5)
+### Web APIs Used
+*   **getDisplayMedia API:** Modern screen capture API for Chrome/Electron
+*   **getUserMedia API:** Camera and microphone access
+*   **MediaRecorder API:** Recording MediaStream to blob chunks
+*   **MediaStream API:** Managing and combining audio/video tracks
+
+### Electron APIs Used
+*   **desktopCapturer:** Enumerate available screens and windows
+*   **session permissions:** Grant camera/microphone/screen recording permissions
+
+### Codec Support
+*   **WebM with VP9:** Primary codec (best quality)
+*   **WebM with VP8:** Fallback codec (good compatibility)
+*   **WebM:** Basic fallback (no specific codec)
+*   **MP4:** Future support planned (limited browser support currently)
 
 ## Development Setup ✅ WORKING
 
@@ -70,17 +84,22 @@
 - `electron` - Core framework
 - `react` - UI library  
 - `react-dom` - React DOM rendering
-- `fluent-ffmpeg` - FFmpeg wrapper
+- `fluent-ffmpeg` - FFmpeg wrapper (export functionality)
 - `@babel/preset-react` - JSX compilation
 - `babel-loader` - Webpack loader
-- `copy-webpack-plugin` - For copying FFmpeg binaries in dev (PR-2)
+- `copy-webpack-plugin` - For copying FFmpeg binaries in dev
+- `@dnd-kit/core` - Modern drag and drop (PR-6)
+- `@dnd-kit/sortable` - Sortable list support (PR-6)
+- `lucide-react` - SVG icon library (PR-7)
 
-### To Be Added (Future PRs)
-- `react-beautiful-dnd` - Drag and drop (PR-6)
-- `react-hot-toast` - Notifications (PR-5)
-- `uuid` - Unique IDs for clips (PR-2) - **NOTE: This was implemented as a utility, not a separate package**
+### Not Required (Built-in or Utility)
+- `uuid` - Implemented as utility function, not separate package
+- `react-hot-toast` - Implemented custom toast system with context API
 
 ## Known Technical Issues
 
 *   **EGL Errors:** Normal macOS warnings in console, don't affect functionality
 *   **Autofill Errors:** DevTools warnings, don't affect functionality
+*   **Recording Permissions:** macOS requires manual permission grant in System Preferences for Screen Recording and Camera
+*   **Recording ClipForge:** Recording ClipForge's own window causes blank screens - user is warned automatically
+*   **WebM Format:** Recordings are in WebM format - FFmpeg converts to MP4 during export

@@ -4,12 +4,12 @@
 
 The ClipForge MVP is structured as an Electron desktop application, combining a Node.js backend (main process) with a React frontend (renderer process). Communication between these two processes occurs via Inter-Process Communication (IPC).
 
-**Current Implementation Status:** ✅ MVP Complete - Horizontal Timeline UI Complete
+**Current Implementation Status:** ✅ MVP Complete - Horizontal Timeline UI Complete - Recording Feature In Progress
 
 ```
 electron/
   preload.js          ✅ IPC bridge with contextBridge
-  main.js             ✅ App window + lifecycle + IPC handlers
+  main.js             ✅ App window + lifecycle + IPC handlers + recording permissions
   utils/
     ffmpegPath.js     ✅ FFmpeg path resolution (dev/prod)
   resources/
@@ -18,11 +18,11 @@ electron/
         ffmpeg        ✅ Executable binary
         ffprobe       ✅ Executable binary
   fileManager.js      ✅ Implemented (PR-2)
-  mediaProcessor.js   🔄 Stub (PR-5)
-  captureService.js   🔄 Stub (Future)
+  mediaProcessor.js   ✅ Implemented (PR-5)
+  captureService.js   ✅ Implemented (PR-RECORDING-1) - Source enumeration & permissions
 
 src/
-  App.jsx             ✅ Root component with FileImporter, Timeline, VideoPreview, Notifications
+  App.jsx             ✅ Root component with FileImporter, Timeline, VideoPreview, RecordingPanel, Notifications
   components/
     FileImporter.jsx  ✅ Implemented (PR-2)
     Timeline.jsx      ✅ Replaced with horizontal timeline (PR-UI-1)
@@ -30,6 +30,7 @@ src/
     ClipEditor.jsx    ✅ Implemented (PR-4)
     ExportDialog.jsx  ✅ Implemented (PR-5)
     Notifications.jsx ✅ Implemented (PR-2)
+    RecordingPanel.jsx ✅ Implemented (PR-RECORDING-1) - Recording controls UI
     TimelineContainer.jsx ✅ Implemented (PR-UI-1)
     TimeRuler.jsx     ✅ Implemented (PR-UI-1)
     TrackArea.jsx     ✅ Implemented (PR-UI-1)
@@ -43,6 +44,7 @@ src/
     useTimelineKeyboard.js ✅ Implemented (PR-UI-4)
     useThumbnailPreload.js ✅ Implemented (PR-UI-3)
   utils/              ✅ Implemented (uuid, formatters, constants, toastContext, timelineUtils)
+    rendererCaptureService.js ✅ Implemented (PR-RECORDING-1) - Core recording logic
   styles/
     main.css          ✅ Updated for horizontal timeline layout (PR-UI-1)
 ```
@@ -101,24 +103,60 @@ src/
 contextBridge.exposeInMainWorld('electronAPI', {
   // File operations
   readMetadata: (filePath) => ipcRenderer.invoke('read-metadata', filePath),
+  selectFile: () => ipcRenderer.invoke('select-file'),
+  handleDroppedFiles: (files) => ..., // webUtils.getPathForFile() conversion
   
   // Export operations
   exportTimeline: (data) => ipcRenderer.invoke('export-timeline', data),
   onExportProgress: (callback) => ipcRenderer.on('export-progress', callback),
+  selectSaveLocation: () => ipcRenderer.invoke('select-save-location'),
   
-  // Utility
-  selectFile: () => ipcRenderer.invoke('select-file'),
-  selectSaveLocation: () => ipcRenderer.invoke('select-save-location')
+  // Recording operations
+  getSources: () => ipcRenderer.invoke('get-sources'),
+  testScreenPermissions: () => ipcRenderer.invoke('test-screen-permissions'),
+  requestScreenPermission: () => ipcRenderer.invoke('request-screen-permission'),
+  writeRecordingFile: (outputPath, buffer) => ipcRenderer.invoke('write-recording-file', outputPath, buffer),
+  getHomeDir: () => ipcRenderer.invoke('get-home-dir')
 });
 ```
 
 ### Main Process Handlers (src/main.js)
 ```javascript
-// All handlers registered as stubs, ready for implementation
+// File operations
 ipcMain.handle('read-metadata', async (event, filePath) => {
-  throw new Error('Not implemented - will be added in PR-2');
+  const metadata = await fileManager.getMetadata(filePath);
+  return { success: true, data: metadata };
 });
-// ... other handlers
+
+// Export operations
+ipcMain.handle('export-timeline', async (event, { clips, outputPath }) => {
+  await mediaProcessor.exportTimeline(clips, outputPath, (progress) => {
+    mainWindow.webContents.send('export-progress', progress);
+  });
+  return { success: true, outputPath };
+});
+
+// Recording operations
+ipcMain.handle('get-sources', async () => {
+  const sources = await captureService.getSources();
+  return { success: true, data: sources };
+});
+
+ipcMain.handle('test-screen-permissions', async () => {
+  const hasPermission = await captureService.testScreenPermissions();
+  return { success: true, data: hasPermission };
+});
+
+ipcMain.handle('write-recording-file', async (event, outputPath, uint8Array) => {
+  const buffer = Buffer.from(uint8Array);
+  fs.writeFileSync(outputPath, buffer);
+  return { success: true };
+});
+
+ipcMain.handle('get-home-dir', async () => {
+  const homeDir = require('os').homedir();
+  return { success: true, data: homeDir };
+});
 ```
 
 ## Trim Functionality ✅ IMPLEMENTED (PR-4)
@@ -214,9 +252,115 @@ const timelineState = {
 - **Theme:** Professional styling with hover states and visual feedback
 - **Responsive:** Maintains performance with multiple clips and zoom levels
 
+## Recording Architecture ✅ IMPLEMENTED (PR-RECORDING-1)
+
+### Recording System Overview
+The recording system allows users to capture screen, webcam, or both simultaneously directly within ClipForge. Recordings are automatically added to the timeline for immediate editing.
+
+### Architecture Decisions
+*   **Renderer-side Recording:** Core recording logic runs in renderer process using Web APIs (getDisplayMedia, getUserMedia, MediaRecorder)
+*   **Main Process Role:** Provides source enumeration (desktopCapturer) and permission testing only
+*   **IPC Bridge:** Minimal IPC communication - only for getting sources, testing permissions, and writing files
+*   **Stream Management:** All media streams handled in renderer for better performance and API compatibility
+
+### Recording Flow
+```
+User clicks "Record Screen"
+    ↓
+App.jsx: handleStartRecord()
+    ↓
+1. Test permissions (via IPC)
+    ↓
+2. Get available sources (via IPC)
+    ↓
+3. Auto-select non-ClipForge source
+    ↓
+4. Call rendererCaptureService.startScreenRecord(sourceId)
+    ↓
+5. getDisplayMedia() or getUserMedia() → MediaStream
+    ↓
+6. Setup MediaRecorder with codec detection
+    ↓
+7. Start recording with chunk collection (1-second intervals)
+    ↓
+8. Update UI with elapsed time
+    ↓
+User clicks "Stop Recording"
+    ↓
+App.jsx: handleStopRecord()
+    ↓
+1. Stop MediaRecorder
+    ↓
+2. Combine chunks into Blob
+    ↓
+3. Convert to Uint8Array
+    ↓
+4. Write file via IPC (writeRecordingFile)
+    ↓
+5. Clean up all streams
+    ↓
+6. Generate thumbnail
+    ↓
+7. Create clip object and add to timeline
+    ↓
+8. Show success toast
+```
+
+### Recording Types
+*   **Screen Recording:**
+    - Uses getDisplayMedia API (modern) with desktopCapturer fallback (legacy)
+    - Captures screen video + microphone audio separately
+    - Resolution: up to 1920x1080 @ 30fps
+    - Audio: Microphone input with echo cancellation and noise suppression
+*   **Webcam Recording:**
+    - Uses getUserMedia API with video + audio constraints
+    - Resolution: 1280x720
+    - Audio: Built-in microphone with audio processing
+*   **Composite Recording (Screen + Webcam):**
+    - Combines screen video stream with webcam audio stream
+    - Simplified approach to avoid canvas compositing issues
+    - Screen video as primary, webcam audio for narration
+    - Note: Picture-in-picture visual compositing is planned for future
+
+### Codec Selection Strategy
+The system attempts codecs in priority order until one is supported:
+1. `video/webm;codecs=vp9` (Best quality, modern browsers)
+2. `video/webm;codecs=vp8` (Good compatibility)
+3. `video/webm` (Basic WebM)
+4. `video/mp4` (Fallback, limited browser support)
+
+### Permission Handling
+*   **Screen Recording:** macOS requires Screen Recording permission in System Preferences
+*   **Camera Access:** macOS requires Camera permission in System Preferences
+*   **Permission Flow:**
+    1. Test if permissions already granted
+    2. If not, trigger permission request via API call
+    3. Show user-friendly error message with System Preferences guidance
+    4. Handle permission denial gracefully
+
+### Error Handling
+*   **Permission Errors:** NotAllowedError → User-friendly message with System Preferences guidance
+*   **No Sources:** Empty sources list → Warning to user
+*   **Recording ClipForge:** Auto-detect and warn user (causes blank screens)
+*   **Stream Cleanup:** Automatic cleanup on error, stop, or component unmount
+*   **Timeout Protection:** 5-minute recording timeout to prevent hanging
+
+### File Management
+*   **Output Format:** WebM with best available codec
+*   **File Naming:** `{type}_{timestamp}.webm` (e.g., `screen_1698765432000.webm`)
+*   **Save Location:** User's Desktop directory (~/Desktop/)
+*   **File Writing:** IPC-based file writing to avoid renderer security restrictions
+
+### Integration with Timeline
+*   Recordings automatically added as clips after stopping
+*   Clip metadata includes: fileName, filePath, duration, width, height, thumbnail
+*   Source type tracked: 'screen', 'webcam', or 'screen+webcam'
+*   Track assignment: 'main' for screen/webcam, 'overlay' for webcam in composite mode
+
 ## Build & Packaging ✅ IMPLEMENTED
 
 *   **Development:** `npm start` - Webpack dev server + Electron
 *   **Production:** `npm run make` - Creates packaged .zip with bundled FFmpeg
 *   **FFmpeg Path Resolution:** Automatic detection of dev vs production paths
 *   **Output:** `out/make/zip/darwin/x64/clipforge-darwin-x64-1.0.0.zip`
+*   **Permissions:** macOS requires Screen Recording and Camera permissions to be granted manually

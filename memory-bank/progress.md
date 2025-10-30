@@ -40,7 +40,7 @@ All 8 PRs have been successfully completed. The ClipForge MVP is feature-complet
 ### PR-8: Testing, Packaging & Final Polish (COMPLETED)
 8.  **Documentation & Packaging:** ✅ Successfully completed final polish with comprehensive README documentation, MIT LICENSE file, and successful production build (`npm run make`). All console.log statements removed from source files. Updated tasks_MVP.md with completion status. App successfully packages to .zip format in out/make/zip/darwin/x64/. **MVP is complete and ready for production use.**
 
-## Current Status: MVP COMPLETE → HORIZONTAL TIMELINE COMPLETE → UI POLISHED 🎉
+## Current Status: MVP COMPLETE → HORIZONTAL TIMELINE COMPLETE → RECORDING FEATURE IN PROGRESS 🎉
 
 ### MVP Status: COMPLETE ✅
 *   **PR-1 Complete:** Solid foundation established
@@ -101,7 +101,39 @@ All 8 PRs have been successfully completed. The ClipForge MVP is feature-complet
 - **Performance:** All improvements maintain 60fps performance
 - **Testing:** All UI improvements tested and verified working correctly
 
+### RECORDING FEATURE: IN PROGRESS 🎥
+
+**Screen & Webcam Recording** 🔄 IMPLEMENTATION COMPLETE (Staged for Commit)
+- **Status:** Implementation Complete, Testing Needed ✅
+- **Components:**
+  * ✅ RecordingPanel.jsx - UI controls for recording modes
+  * ✅ RecordingPanel.css - Professional styling matching FileImporter
+  * ✅ rendererCaptureService.js - Core recording logic (530+ lines)
+  * ✅ captureService.js - Main process source enumeration
+  * ✅ Updated App.jsx with recording state and handlers
+  * ✅ Updated main.js with recording IPC handlers
+  * ✅ Updated preload.js with recording API bridge
+- **Features Implemented:**
+  * ✅ Screen recording with source selection (entire screen or specific window)
+  * ✅ Webcam recording with audio
+  * ✅ Composite recording (screen + webcam simultaneously)
+  * ✅ Real-time duration display with elapsed timer
+  * ✅ Automatic codec selection (VP9 → VP8 → WebM → MP4)
+  * ✅ Microphone audio capture during screen recording
+  * ✅ Automatic stream cleanup on stop/error
+  * ✅ Permission handling for camera and screen recording
+  * ✅ Warning system to avoid recording ClipForge itself
+  * ✅ Automatic addition of recordings to timeline
+  * ✅ 5-minute recording timeout for safety
+  * ✅ Comprehensive error handling and logging
+- **Testing Status:**
+  * ⏳ Manual testing needed (screen, webcam, composite modes)
+  * ⏳ Permission handling verification needed
+  * ⏳ Production build testing needed
+  * ⏳ Codec compatibility testing needed
+
 ## Known Issues
 
 *   **Dev Mode FFmpeg:** Requires `brew install ffmpeg` for development (not needed for packaged app)
 *   **EGL Errors:** Normal macOS warnings, don't affect functionality
+*   **Recording Feature:** Implementation complete but untested - manual testing required before release

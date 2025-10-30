@@ -11,7 +11,9 @@ export function useTimelineKeyboard({
   onSeekToTime,
   playheadPosition,
   zoomLevel,
-  timelineRef
+  timelineRef,
+  onSplitClip,
+  canSplitClip
 }) {
   const lastKeyTime = useRef(0);
   const keyRepeatTimeout = useRef(null);
@@ -23,22 +25,29 @@ export function useTimelineKeyboard({
         return;
       }
 
-      // Prevent default browser behavior for arrow keys
-      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+      // Prevent default browser behavior for arrow keys and 'S' key
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 's', 'S'].includes(e.key)) {
         e.preventDefault();
       }
 
       const now = Date.now();
       const timeSinceLastKey = now - lastKeyTime.current;
       
-      // Throttle key repeats to avoid flooding state updates
-      if (timeSinceLastKey < 100) {
+      // Throttle key repeats to avoid flooding state updates (except for split)
+      if (timeSinceLastKey < 100 && !['s', 'S'].includes(e.key)) {
         return;
       }
       
       lastKeyTime.current = now;
 
       switch (e.key) {
+        case 's':
+        case 'S':
+          // Split clip at playhead (only if valid)
+          if (canSplitClip && onSplitClip) {
+            onSplitClip();
+          }
+          break;
         case 'ArrowLeft':
           // Seek playhead backward by 1 second (adjusted by zoom level)
           const seekBackward = Math.max(0, playheadPosition - (1 / zoomLevel));
@@ -84,5 +93,5 @@ export function useTimelineKeyboard({
         clearTimeout(keyRepeatTimeout.current);
       }
     };
-  }, [clips, selectedClipId, onSelectClip, onSeekToTime, playheadPosition, zoomLevel, timelineRef]);
+  }, [clips, selectedClipId, onSelectClip, onSeekToTime, playheadPosition, zoomLevel, timelineRef, onSplitClip, canSplitClip]);
 }

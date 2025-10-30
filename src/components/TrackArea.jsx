@@ -32,7 +32,8 @@ export default function TrackArea({
           
           const trimmedDuration = clipTrimEnd - clipTrimStart;
           const clipWidth = Math.max(trimmedDuration * pxPerSecond, 20); // Minimum 20px width
-          const clipPosition = currentPosition + clipTrimStart * pxPerSecond;
+          // Position clips sequentially without gaps - trimStart is only for video playback, not positioning
+          const clipPosition = currentPosition;
           
           // Update position for next clip (use trimmed duration for spacing)
           currentPosition += trimmedDuration * pxPerSecond;

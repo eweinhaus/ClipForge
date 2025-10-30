@@ -17,6 +17,7 @@
 .timeline-controls-right {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .zoom-controls {
@@ -125,6 +126,31 @@
 }
 
 .export-btn:disabled {
+  background: #999;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.split-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.split-btn:hover:not(:disabled) {
+  background: #5a6268;
+}
+
+.split-btn:disabled {
   background: #999;
   cursor: not-allowed;
   opacity: 0.6;

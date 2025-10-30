@@ -20,7 +20,9 @@ export default function TimelineContainer({
   onSeekToTime,
   onTrimChange,
   onExport,
-  isExporting
+  isExporting,
+  onSplitClip,
+  canSplitClip
 }) {
   const timelineHeight = 200; // Fixed height
   const [zoomLevel, setZoomLevel] = useState(() => {
@@ -70,7 +72,9 @@ export default function TimelineContainer({
     onSeekToTime,
     playheadPosition,
     zoomLevel,
-    timelineRef: containerRef
+    timelineRef: containerRef,
+    onSplitClip,
+    canSplitClip
   });
 
 
@@ -130,6 +134,8 @@ export default function TimelineContainer({
         timelineWidth={800} // TODO: Calculate actual timeline width
         onExport={onExport}
         isExporting={isExporting}
+        onSplitClip={onSplitClip}
+        canSplitClip={canSplitClip}
       />
     </div>
   );

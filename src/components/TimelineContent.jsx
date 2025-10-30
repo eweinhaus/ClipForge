@@ -75,42 +75,41 @@ export default function TimelineContent({
                 (clip.track || 'main') === trackConfig.id
               );
 
-              // Skip hidden tracks
-              if (hiddenTracks.includes(trackConfig.id)) {
-                return null;
-              }
+              const isHidden = hiddenTracks.includes(trackConfig.id);
 
               return (
-                <div key={trackConfig.id} className="track-row">
+                <div key={trackConfig.id} className={`track-row ${isHidden ? 'track-hidden' : ''}`}>
                   <div className="track-label">
                     <span className="track-name">{trackConfig.label}</span>
                     {onToggleTrackVisibility && (
                       <button
                         className="track-visibility-toggle"
                         onClick={() => onToggleTrackVisibility(trackConfig.id)}
-                        title={hiddenTracks.includes(trackConfig.id) ? 'Show track' : 'Hide track'}
-                        aria-label={hiddenTracks.includes(trackConfig.id) ? `Show ${trackConfig.label}` : `Hide ${trackConfig.label}`}
+                        title={isHidden ? 'Show track' : 'Hide track'}
+                        aria-label={isHidden ? `Show ${trackConfig.label}` : `Hide ${trackConfig.label}`}
                       >
-                        {hiddenTracks.includes(trackConfig.id) ? <EyeOff size={14} /> : <Eye size={14} />}
+                        {isHidden ? <EyeOff size={14} /> : <Eye size={14} />}
                       </button>
                     )}
                   </div>
-                  <div className="track-content" style={{ width: effectiveTimelineWidth }}>
-                    <TrackArea
-                      trackId={trackConfig.id}
-                      trackConfig={trackConfig}
-                      clips={trackClips}
-                      selectedClipId={selectedClipId}
-                      onSelectClip={onSelectClip}
-                      onDeleteClip={onDeleteClip}
-                      onDuplicateClip={onDuplicateClip}
-                      onResetTrim={onResetTrim}
-                      pxPerSecond={pxPerSecond}
-                      zoomLevel={zoomLevel}
-                      snapToGrid={snapToGrid}
-                      onTrimChange={onTrimChange}
-                    />
-                  </div>
+                  {!isHidden && (
+                    <div className="track-content" style={{ width: effectiveTimelineWidth }}>
+                      <TrackArea
+                        trackId={trackConfig.id}
+                        trackConfig={trackConfig}
+                        clips={trackClips}
+                        selectedClipId={selectedClipId}
+                        onSelectClip={onSelectClip}
+                        onDeleteClip={onDeleteClip}
+                        onDuplicateClip={onDuplicateClip}
+                        onResetTrim={onResetTrim}
+                        pxPerSecond={pxPerSecond}
+                        zoomLevel={zoomLevel}
+                        snapToGrid={snapToGrid}
+                        onTrimChange={onTrimChange}
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}

@@ -111,7 +111,8 @@ body {
   background: var(--bg-white);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   flex-shrink: 0;
 }
 

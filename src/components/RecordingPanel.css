@@ -1,0 +1,247 @@
+/* RecordingPanel.css */
+.recording-panel {
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  margin-right: var(--spacing-sm);
+}
+
+.recording-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.recording-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.recording-status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--accent-color);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.recording-indicator {
+  width: 8px;
+  height: 8px;
+  background: var(--accent-color);
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.recording-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.recording-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.recording-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.recording-button:hover:not(:disabled) {
+  background: var(--background-hover);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.recording-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.recording-button.active {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: white;
+}
+
+.recording-button.active:hover {
+  background: var(--accent-hover);
+}
+
+.source-selector {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.source-selector:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.source-selector:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.recording-status-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background: var(--background-primary);
+  border: 1px solid var(--accent-color);
+  border-radius: var(--border-radius);
+  margin-top: var(--spacing-md);
+}
+
+.elapsed-time {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.time-label {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.time-value {
+  color: var(--accent-color);
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.stop-recording-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: #dc3545;
+  border: none;
+  border-radius: var(--border-radius);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.stop-recording-button:hover {
+  background: #c82333;
+}
+
+.stop-icon {
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 2px;
+}
+
+.recording-instructions {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--background-primary);
+  border-radius: var(--border-radius);
+  border-left: 3px solid var(--accent-color);
+}
+
+.recording-instructions p {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.recording-instructions ul {
+  margin: 0;
+  padding-left: var(--spacing-md);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.recording-instructions li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.recording-instructions strong {
+  color: var(--text-primary);
+}
+
+.recording-tips {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: var(--border-radius-sm);
+  border-left: 3px solid #f39c12;
+}
+
+.recording-tips p {
+  margin: 0 0 var(--spacing-xs) 0;
+  color: #856404;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.recording-tips ul {
+  margin: 0;
+  padding-left: var(--spacing-md);
+  color: #856404;
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.recording-tips li {
+  margin-bottom: var(--spacing-xs);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .recording-controls {
+    gap: var(--spacing-xs);
+  }
+  
+  .recording-button {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.85rem;
+    min-height: 40px;
+  }
+  
+  .recording-status-panel {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    text-align: center;
+  }
+}
+
